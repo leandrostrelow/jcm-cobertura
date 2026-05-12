@@ -1,7 +1,12 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzF1MGAmojETsvqyoxybuBjDN3FRh4ivw785S1B9omphFuQ5Uuq8nrxla8SgHDedundxg/exec";
 const storageKey = "jcm-simple-coverage-v2";
 const localSchedule = window.JCM_SCHEDULE || [];
-const STORY_BACKGROUND = "story-background.png";
+const STORY_BACKGROUNDS = {
+  start: "story-background-inicio.png",
+  result: "story-background-resultado.png",
+  photos: "story-background-fotos.png",
+  fallback: "story-background.png"
+};
 const STORY_WIDTH = 1080;
 const STORY_HEIGHT = 1920;
 const TEAM_LOGOS = {
@@ -685,6 +690,10 @@ function drawStoryModality(ctx, item, y, size, lineGap = 66) {
   drawStoryText(ctx, lines[1], y + lineGap, size, 860);
 }
 
+function drawStoryModalityCompact(ctx, item, y, size = 52) {
+  drawStoryText(ctx, modalityParts(item).join(" "), y, size, 850);
+}
+
 function drawStoryModalitySmall(ctx, item, y) {
   const text = modalityParts(item).join(" ");
   drawStoryText(ctx, `(${text})`, y, 42, 820);
@@ -802,9 +811,13 @@ async function drawStory(type, item, data) {
   ctx.clearRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
 
   try {
-    drawCover(ctx, await loadImage(STORY_BACKGROUND));
+    drawCover(ctx, await loadImage(STORY_BACKGROUNDS[type] || STORY_BACKGROUNDS.fallback));
   } catch {
-    drawFallbackBackground(ctx);
+    try {
+      drawCover(ctx, await loadImage(STORY_BACKGROUNDS.fallback));
+    } catch {
+      drawFallbackBackground(ctx);
+    }
   }
 
   ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
@@ -812,10 +825,14 @@ async function drawStory(type, item, data) {
 
   const isResult = type === "result";
   const isPhotos = type === "photos";
-  drawStoryText(ctx, storyLabel(type), isResult ? 505 : isPhotos ? 520 : 525, isResult ? 70 : 74, 930);
+  const titleY = isResult || isPhotos ? 460 : 520;
+  drawStoryText(ctx, storyLabel(type), titleY, isResult ? 70 : 74, 930);
+  if (isResult || isPhotos) {
+    drawStoryModalityCompact(ctx, item, 555, 48);
+  }
 
-  const logoSize = isResult ? 335 : isPhotos ? 360 : 370;
-  const logoY = isResult ? 770 : isPhotos ? 810 : 805;
+  const logoSize = isResult ? 345 : isPhotos ? 360 : 370;
+  const logoY = isResult ? 820 : isPhotos ? 835 : 805;
   const logoAX = 315;
   const logoBX = 765;
   const logoA = TEAM_LOGOS[item.teamA];
@@ -849,13 +866,12 @@ async function drawStory(type, item, data) {
   drawVersusStory(ctx, logoY);
 
   if (isResult) {
-    drawScoreNumber(ctx, data.scoreA, logoAX, 1078, loserOpacity(data, "A"));
-    drawScoreNumber(ctx, data.scoreB, logoBX, 1078, loserOpacity(data, "B"));
-    drawStoryModalitySmall(ctx, item, 1220);
+    drawScoreNumber(ctx, data.scoreA, logoAX, 1135, loserOpacity(data, "A"));
+    drawScoreNumber(ctx, data.scoreB, logoBX, 1135, loserOpacity(data, "B"));
   } else if (isPhotos) {
-    drawStoryModality(ctx, item, 1210, 64, 66);
+    // Photos art keeps only the title, sport and team crests.
   } else {
-    drawStoryModality(ctx, item, 1200, 72, 74);
+    drawStoryModality(ctx, item, 1125, 72, 74);
   }
 
   currentStory.blob = await canvasToBlob(canvas);
