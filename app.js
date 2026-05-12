@@ -2,7 +2,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzF1MGAmojETsvqyoxybuBj
 const storageKey = "jcm-simple-coverage-v2";
 const localSchedule = window.JCM_SCHEDULE || [];
 const TEAM_LOGOS = {
-  "Multivix Vitória": "assets/logos/multivix-vitoria.png",
+ "Multivix Vitória": "assets/logos/multivix-vitoria.png",
   "Multivix Cachoeiro": "assets/logos/multivix-cachoeiro.png",
   "UFES": "assets/logos/ufes.png",
   "EMESCAM": "assets/logos/emescam.png",
