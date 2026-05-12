@@ -44,6 +44,33 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <div id="storyModal" class="story-modal" hidden>
+      <div class="story-dialog" role="dialog" aria-modal="true" aria-labelledby="storyTitle">
+        <div class="story-head">
+          <div>
+            <p>Arte para Instagram</p>
+            <h2 id="storyTitle">Story</h2>
+          </div>
+          <button id="closeStory" class="modal-icon" type="button" title="Fechar">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="story-body">
+          <canvas id="storyCanvas" width="1080" height="1920" aria-label="Prévia do story"></canvas>
+        </div>
+        <div class="story-actions">
+          <button id="downloadStory" class="secondary-button" type="button">
+            <i data-lucide="download"></i>
+            <span>Baixar PNG</span>
+          </button>
+          <button id="shareStory" class="secondary-button primary-share" type="button">
+            <i data-lucide="share-2"></i>
+            <span>Compartilhar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="data/schedule-data.js"></script>
     <script src="app.js"></script>

@@ -554,9 +554,32 @@ select:focus {
   gap: 8px;
 }
 
-.open-link {
+.link-actions.has-generator {
+  grid-template-columns: 1fr auto auto;
+}
+
+.open-link,
+.generate-art,
+.modal-icon {
   min-width: 48px;
   padding: 0 12px;
+}
+
+.generate-art {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  background: var(--soft-blue);
+  color: var(--blue);
+  font-weight: 900;
+}
+
+.generate-art:hover {
+  border-color: var(--blue);
 }
 
 .open-link.disabled {
@@ -605,6 +628,93 @@ select:focus {
 .toast.show {
   opacity: 1;
   transform: translateY(0);
+}
+
+.story-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 15, 15, 0.62);
+}
+
+.story-modal[hidden] {
+  display: none;
+}
+
+.story-dialog {
+  display: grid;
+  gap: 14px;
+  width: min(460px, 100%);
+  max-height: calc(100vh - 36px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  padding: 14px;
+}
+
+.story-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.story-head p {
+  margin: 0 0 2px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.story-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.modal-icon {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.story-body {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  border-radius: 8px;
+  background: #111;
+  overflow: hidden;
+}
+
+#storyCanvas {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  aspect-ratio: 9 / 16;
+}
+
+.story-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.primary-share {
+  border-color: #ddd6fe;
+  background: var(--soft-blue);
+  color: var(--blue);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 @media (max-width: 1080px) {
@@ -683,6 +793,10 @@ select:focus {
   }
 
   .link-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .link-actions.has-generator {
     grid-template-columns: 1fr;
   }
 }

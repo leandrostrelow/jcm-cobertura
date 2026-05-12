@@ -1,6 +1,9 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzF1MGAmojETsvqyoxybuBjDN3FRh4ivw785S1B9omphFuQ5Uuq8nrxla8SgHDedundxg/exec";
 const storageKey = "jcm-simple-coverage-v2";
 const localSchedule = window.JCM_SCHEDULE || [];
+const STORY_BACKGROUND = "story-background.png";
+const STORY_WIDTH = 1080;
+const STORY_HEIGHT = 1920;
 const TEAM_LOGOS = {
   "Multivix Vitória": "multivix-vitoria.png",
   "Multivix Cachoeiro": "multivix-cachoeiro.png",
@@ -22,7 +25,19 @@ const els = {
   nextPending: document.querySelector("#nextPending"),
   matchCard: document.querySelector("#matchCard"),
   toast: document.querySelector("#toast"),
-  syncStatus: document.querySelector("#syncStatus")
+  syncStatus: document.querySelector("#syncStatus"),
+  storyModal: document.querySelector("#storyModal"),
+  storyCanvas: document.querySelector("#storyCanvas"),
+  storyTitle: document.querySelector("#storyTitle"),
+  downloadStory: document.querySelector("#downloadStory"),
+  shareStory: document.querySelector("#shareStory"),
+  closeStory: document.querySelector("#closeStory")
+};
+
+let currentStory = {
+  blob: null,
+  fileName: "story-jcm.png",
+  title: "Story JCM"
 };
 
 function readState() {
@@ -491,13 +506,21 @@ function renderPhotographer(person, index) {
 function renderLinkField(field, title, value, icon) {
   const disabled = value ? "" : "disabled";
   const safe = escapeHtml(value);
+  const artType = field === "startArtUrl" ? "start" : field === "resultArtUrl" ? "result" : "";
+  const generateButton = artType
+    ? `<button class="generate-art" type="button" data-art-type="${artType}" title="Gerar arte para story">
+        <i data-lucide="wand-sparkles"></i>
+        <span>Gerar</span>
+      </button>`
+    : "";
   return `
     <div class="link-item">
       <header>
         <h3>${escapeHtml(title)}</h3>
       </header>
-      <div class="link-actions">
+      <div class="link-actions ${artType ? "has-generator" : ""}">
         <input type="url" value="${safe}" placeholder="https://..." data-field="${field}">
+        ${generateButton}
         <a class="open-link ${disabled}" href="${safe || "#"}" target="_blank" rel="noreferrer" title="Abrir ou baixar">
           <i data-lucide="${icon}"></i>
         </a>
@@ -555,6 +578,226 @@ function showToast(message) {
   els.toast.classList.add("show");
   window.clearTimeout(showToast.timer);
   showToast.timer = window.setTimeout(() => els.toast.classList.remove("show"), 2300);
+}
+
+function storyLabel(type) {
+  return type === "result" ? "RESULTADO FINAL" : "INÍCIO DO JOGO";
+}
+
+function storyFileName(item, type) {
+  const base = `${type === "result" ? "resultado" : "inicio"}-${item.modality}-${item.teamA || "evento"}-${item.teamB || ""}`;
+  return `${slugify(base)}.png`;
+}
+
+function slugify(value) {
+  return normalizeText(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    if (!src) {
+      reject(new Error("Imagem não informada."));
+      return;
+    }
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+function drawCover(ctx, image) {
+  const scale = Math.max(STORY_WIDTH / image.width, STORY_HEIGHT / image.height);
+  const width = image.width * scale;
+  const height = image.height * scale;
+  ctx.drawImage(image, (STORY_WIDTH - width) / 2, (STORY_HEIGHT - height) / 2, width, height);
+}
+
+function drawFallbackBackground(ctx) {
+  const gradient = ctx.createLinearGradient(0, 0, STORY_WIDTH, 0);
+  gradient.addColorStop(0, "#3c1763");
+  gradient.addColorStop(1, "#080311");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+}
+
+function drawContainedImage(ctx, image, centerX, centerY, maxWidth, maxHeight) {
+  const scale = Math.min(maxWidth / image.width, maxHeight / image.height);
+  const width = image.width * scale;
+  const height = image.height * scale;
+  ctx.drawImage(image, centerX - width / 2, centerY - height / 2, width, height);
+}
+
+function drawStoryText(ctx, text, y, size, maxWidth) {
+  let fontSize = size;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 8;
+  do {
+    ctx.font = `900 ${fontSize}px Inter, Arial, sans-serif`;
+    if (ctx.measureText(text).width <= maxWidth) break;
+    fontSize -= 4;
+  } while (fontSize > 42);
+  ctx.fillText(text, STORY_WIDTH / 2, y);
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+}
+
+function drawLogoFallback(ctx, label, centerX, centerY, size) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, size / 2, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(124,58,237,0.65)";
+  ctx.lineWidth = 8;
+  ctx.stroke();
+  ctx.fillStyle = "#151515";
+  ctx.font = `900 ${Math.round(size * 0.18)}px Inter, Arial, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(normalizeText(label).slice(0, 12).toUpperCase(), centerX, centerY);
+  ctx.restore();
+}
+
+function drawStoryScore(ctx, data) {
+  if (!hasCompleteScore(data)) return;
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 6;
+  ctx.font = "900 112px Inter, Arial, sans-serif";
+  ctx.fillText(`${data.scoreA} x ${data.scoreB}`, STORY_WIDTH / 2, 1002);
+  ctx.restore();
+}
+
+async function openStoryArt(type) {
+  const item = getCurrentItem();
+  const data = record(item.id);
+
+  if (!item.teamA || !item.teamB) {
+    showToast("Essa arte precisa de duas equipes na partida.");
+    return;
+  }
+  if (type === "result" && !hasCompleteScore(data)) {
+    showToast("Coloque o placar dos dois times antes de gerar o resultado.");
+    return;
+  }
+
+  els.storyModal.hidden = false;
+  els.storyTitle.textContent = type === "result" ? "Arte de resultado" : "Arte de início";
+  els.downloadStory.disabled = true;
+  els.shareStory.disabled = true;
+  currentStory = {
+    blob: null,
+    fileName: storyFileName(item, type),
+    title: `${storyLabel(type)} - ${item.modality}`
+  };
+
+  await drawStory(type, item, data);
+  if (window.lucide) lucide.createIcons();
+}
+
+async function drawStory(type, item, data) {
+  const canvas = els.storyCanvas;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+
+  try {
+    drawCover(ctx, await loadImage(STORY_BACKGROUND));
+  } catch {
+    drawFallbackBackground(ctx);
+  }
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+  ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+
+  drawStoryText(ctx, storyLabel(type), type === "result" ? 520 : 555, 72, 900);
+
+  const logoSize = type === "result" ? 285 : 330;
+  const logoY = type === "result" ? 785 : 850;
+  const logoA = TEAM_LOGOS[item.teamA];
+  const logoB = TEAM_LOGOS[item.teamB];
+
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.38)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 10;
+
+  try {
+    drawContainedImage(ctx, await loadImage(logoA), 340, logoY, logoSize, logoSize);
+  } catch {
+    drawLogoFallback(ctx, item.teamA, 340, logoY, logoSize);
+  }
+
+  try {
+    drawContainedImage(ctx, await loadImage(logoB), 740, logoY, logoSize, logoSize);
+  } catch {
+    drawLogoFallback(ctx, item.teamB, 740, logoY, logoSize);
+  }
+  ctx.restore();
+
+  if (type === "result") {
+    drawStoryScore(ctx, data);
+    drawStoryText(ctx, item.modality.toUpperCase(), 1265, 64, 900);
+  } else {
+    drawStoryText(ctx, item.modality.toUpperCase(), 1265, 72, 940);
+  }
+
+  currentStory.blob = await canvasToBlob(canvas);
+  els.downloadStory.disabled = false;
+  els.shareStory.disabled = false;
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Não foi possível gerar a imagem."));
+    }, "image/png", 1);
+  });
+}
+
+function downloadCurrentStory() {
+  if (!currentStory.blob) return;
+  const url = URL.createObjectURL(currentStory.blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = currentStory.fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function shareCurrentStory() {
+  if (!currentStory.blob) return;
+  const file = new File([currentStory.blob], currentStory.fileName, { type: "image/png" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({
+      files: [file],
+      title: currentStory.title
+    });
+    return;
+  }
+  downloadCurrentStory();
+  showToast("Compartilhamento não disponível aqui. Baixei a arte para você postar pelo celular.");
+}
+
+function closeStoryModal() {
+  els.storyModal.hidden = true;
 }
 
 function findNextPending() {
@@ -647,6 +890,15 @@ function bindEvents() {
     }
   });
 
+  els.closeStory.addEventListener("click", closeStoryModal);
+  els.downloadStory.addEventListener("click", downloadCurrentStory);
+  els.shareStory.addEventListener("click", () => {
+    shareCurrentStory().catch(() => showToast("Não consegui compartilhar. Tente baixar o PNG."));
+  });
+  els.storyModal.addEventListener("click", (event) => {
+    if (event.target === els.storyModal) closeStoryModal();
+  });
+
   els.matchCard.addEventListener("input", (event) => {
     const item = getCurrentItem();
     const data = record(item.id);
@@ -685,6 +937,11 @@ function bindEvents() {
     const data = record(item.id);
     const add = event.target.closest("[data-add-photographer]");
     const toggle = event.target.closest("[data-toggle]");
+    const art = event.target.closest("[data-art-type]");
+    if (art) {
+      openStoryArt(art.dataset.artType).catch(() => showToast("Não consegui gerar a arte."));
+      return;
+    }
     if (add) {
       data.photographers.push({ name: "", sd: "", backup: false });
       saveState();
