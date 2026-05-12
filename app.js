@@ -1,6 +1,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzF1MGAmojETsvqyoxybuBjDN3FRh4ivw785S1B9omphFuQ5Uuq8nrxla8SgHDedundxg/exec";
 const storageKey = "jcm-simple-coverage-v2";
 const notificationKey = "jcm-simple-notifications-v1";
+const notificationSoundFile = "notification.mp3";
 const remotePollIntervalMs = 12000;
 const localSchedule = window.JCM_SCHEDULE || [];
 const STORY_BACKGROUNDS = {
@@ -28,6 +29,7 @@ let remoteReady = false;
 let remotePollTimer = null;
 let savingRemote = false;
 let notificationSoundReady = false;
+let notificationAudio = null;
 let notificationAudioContext = null;
 const saveTimers = {};
 
@@ -710,6 +712,35 @@ function clearNotifications() {
   renderNotifications();
 }
 
+function getNotificationAudio() {
+  if (!notificationAudio) {
+    notificationAudio = new Audio(notificationSoundFile);
+    notificationAudio.preload = "auto";
+    notificationAudio.volume = 0.95;
+  }
+  return notificationAudio;
+}
+
+async function enableNotificationSound() {
+  notificationSoundReady = true;
+  try {
+    const audio = getNotificationAudio();
+    audio.currentTime = 0;
+    await audio.play();
+    showToast("Som das notificações ativado.");
+  } catch {
+    playFallbackNotificationSound();
+    showToast("Som ativado. Se o MP3 ainda não carregar, uso um bip reserva.");
+  }
+}
+
+function playNotificationSound() {
+  if (!notificationSoundReady) return;
+  const audio = getNotificationAudio().cloneNode(true);
+  audio.volume = 0.95;
+  audio.play().catch(() => playFallbackNotificationSound());
+}
+
 function createNotificationAudioContext() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return null;
@@ -717,21 +748,9 @@ function createNotificationAudioContext() {
   return notificationAudioContext;
 }
 
-async function enableNotificationSound() {
+function playFallbackNotificationSound() {
   const context = createNotificationAudioContext();
-  if (!context) {
-    showToast("Este navegador não liberou som interno.");
-    return;
-  }
-  if (context.state === "suspended") await context.resume();
-  notificationSoundReady = true;
-  playNotificationSound();
-  showToast("Som das notificações ativado.");
-}
-
-function playNotificationSound() {
-  const context = createNotificationAudioContext();
-  if (!context || (!notificationSoundReady && context.state === "suspended")) return;
+  if (!context) return;
   if (context.state === "suspended") context.resume().catch(() => {});
   const now = context.currentTime;
   const gain = context.createGain();
