@@ -33,10 +33,16 @@
           <span>Partida / evento</span>
           <select id="gamePicker"></select>
         </label>
-        <button id="nextPending" class="secondary-button" type="button">
-          <i data-lucide="skip-forward"></i>
-          <span>Próxima pendente</span>
-        </button>
+        <div class="picker-actions" aria-label="Navegar entre partidas">
+          <button id="prevGame" class="secondary-button" type="button">
+            <i data-lucide="chevron-left"></i>
+            <span>Anterior</span>
+          </button>
+          <button id="nextGame" class="secondary-button" type="button">
+            <span>Próximo</span>
+            <i data-lucide="chevron-right"></i>
+          </button>
+        </div>
       </section>
 
       <section id="matchCard" class="match-card" aria-live="polite"></section>

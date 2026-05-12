@@ -27,7 +27,8 @@ const saveTimers = {};
 const els = {
   dateFilter: document.querySelector("#dateFilter"),
   gamePicker: document.querySelector("#gamePicker"),
-  nextPending: document.querySelector("#nextPending"),
+  prevGame: document.querySelector("#prevGame"),
+  nextGame: document.querySelector("#nextGame"),
   matchCard: document.querySelector("#matchCard"),
   toast: document.querySelector("#toast"),
   syncStatus: document.querySelector("#syncStatus"),
@@ -930,11 +931,12 @@ function closeStoryModal() {
   els.storyModal.hidden = true;
 }
 
-function findNextPending() {
+function findGameByOffset(offset) {
   const visible = getVisibleGames();
-  const currentIndex = visible.findIndex((item) => item.id === selectedId);
-  const ordered = [...visible.slice(currentIndex + 1), ...visible.slice(0, currentIndex + 1)];
-  return ordered.find((item) => !isFinalized(item)) || visible[0];
+  if (!visible.length) return null;
+  const currentIndex = Math.max(0, visible.findIndex((item) => item.id === selectedId));
+  const nextIndex = (currentIndex + offset + visible.length) % visible.length;
+  return visible[nextIndex];
 }
 
 async function loadRemoteData() {
@@ -1011,12 +1013,21 @@ function bindEvents() {
     render();
   });
 
-  els.nextPending.addEventListener("click", () => {
-    const next = findNextPending();
+  els.prevGame.addEventListener("click", () => {
+    const previous = findGameByOffset(-1);
+    if (previous) {
+      selectedId = previous.id;
+      render();
+      showToast("Partida anterior selecionada.");
+    }
+  });
+
+  els.nextGame.addEventListener("click", () => {
+    const next = findGameByOffset(1);
     if (next) {
       selectedId = next.id;
       render();
-      showToast("Próxima partida pendente selecionada.");
+      showToast("Próxima partida selecionada.");
     }
   });
 
