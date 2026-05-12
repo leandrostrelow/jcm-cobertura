@@ -416,7 +416,9 @@ function renderTeam(name, side) {
   const img = logo
     ? `<img class="team-logo" src="${escapeHtml(logo)}" alt="" onerror="this.remove()">`
     : "";
-  return `<div class="team ${side}">${img}<span>${escapeHtml(name)}</span></div>`;
+  const label = `<span>${escapeHtml(name)}</span>`;
+  const content = side === "left" ? `${label}${img}` : `${img}${label}`;
+  return `<div class="team ${side}">${content}</div>`;
 }
 
 function renderPhotographer(person, index) {

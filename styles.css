@@ -320,17 +320,17 @@ select:focus {
 
 .score-line {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) 74px 28px 74px minmax(120px, 1fr);
+  grid-template-columns: minmax(150px, 1fr) 74px 28px 74px minmax(150px, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .team {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: clamp(1.25rem, 2.7vw, 2rem);
+  gap: 12px;
+  font-size: clamp(1.05rem, 2vw, 1.42rem);
   font-weight: 950;
   line-height: 1.05;
   overflow-wrap: anywhere;
@@ -346,13 +346,14 @@ select:focus {
 }
 
 .team-logo {
-  width: 42px;
-  height: 42px;
+  width: clamp(56px, 5.4vw, 72px);
+  height: clamp(56px, 5.4vw, 72px);
   flex: 0 0 auto;
-  border-radius: 50%;
+  border-radius: 0;
   object-fit: contain;
-  background: #fff;
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 0;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.12));
 }
 
 .score-input {
