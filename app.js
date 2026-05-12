@@ -423,8 +423,8 @@ function render() {
         <p class="field-title">Links da operação</p>
         <div class="link-grid">
           ${renderLinkField("originalPhotosUrl", "Link fotos originais", data.originalPhotosUrl, "hard-drive-download")}
-          ${renderLinkField("startArtUrl", "Link post início", data.startArtUrl, "download")}
-          ${renderLinkField("resultArtUrl", "Link post resultado", data.resultArtUrl, "download")}
+          ${renderArtCard("start", "Post início")}
+          ${renderArtCard("result", "Post resultado")}
           ${renderLinkField("editedPhotosUrl", "Link fotos editadas", data.editedPhotosUrl, "download")}
           ${renderLinkField("liveUrl", "Link da live ao vivo", data.liveUrl, "radio")}
         </div>
@@ -506,7 +506,7 @@ function renderPhotographer(person, index) {
 function renderLinkField(field, title, value, icon) {
   const disabled = value ? "" : "disabled";
   const safe = escapeHtml(value);
-  const artType = field === "startArtUrl" ? "start" : field === "resultArtUrl" ? "result" : "";
+  const artType = field === "editedPhotosUrl" ? "photos" : "";
   const generateButton = artType
     ? `<button class="generate-art" type="button" data-art-type="${artType}" title="Gerar arte para story">
         <i data-lucide="wand-sparkles"></i>
@@ -525,6 +525,20 @@ function renderLinkField(field, title, value, icon) {
           <i data-lucide="${icon}"></i>
         </a>
       </div>
+    </div>
+  `;
+}
+
+function renderArtCard(type, title) {
+  return `
+    <div class="link-item art-card">
+      <header>
+        <h3>${escapeHtml(title)}</h3>
+      </header>
+      <button class="generate-art full" type="button" data-art-type="${type}" title="Gerar arte para story">
+        <i data-lucide="wand-sparkles"></i>
+        <span>Gerar arte</span>
+      </button>
     </div>
   `;
 }
@@ -581,11 +595,13 @@ function showToast(message) {
 }
 
 function storyLabel(type) {
+  if (type === "photos") return "FOTOS DISPONÍVEIS";
   return type === "result" ? "RESULTADO FINAL" : "INÍCIO DO JOGO";
 }
 
 function storyFileName(item, type) {
-  const base = `${type === "result" ? "resultado" : "inicio"}-${item.modality}-${item.teamA || "evento"}-${item.teamB || ""}`;
+  const prefix = type === "photos" ? "fotos-disponiveis" : type === "result" ? "resultado" : "inicio";
+  const base = `${prefix}-${item.modality}-${item.teamA || "evento"}-${item.teamB || ""}`;
   return `${slugify(base)}.png`;
 }
 
@@ -683,6 +699,52 @@ function drawStoryScore(ctx, data) {
   ctx.restore();
 }
 
+async function copyText(text, successMessage) {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(successMessage);
+  } catch {
+    showToast("Arte gerada. Não consegui copiar o link automaticamente.");
+  }
+}
+
+function drawScoreNumber(ctx, value, centerX, centerY) {
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 6;
+  ctx.font = "900 118px Inter, Arial, sans-serif";
+  ctx.fillText(normalizeText(value), centerX, centerY);
+  ctx.restore();
+}
+
+function drawVersusStory(ctx, y) {
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,0.42)";
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 8;
+  ctx.font = "900 96px Inter, Arial, sans-serif";
+  ctx.fillText("X", STORY_WIDTH / 2, y);
+  ctx.restore();
+}
+
+function loserOpacity(data, side) {
+  if (!hasCompleteScore(data)) return 1;
+  const scoreA = Number(data.scoreA);
+  const scoreB = Number(data.scoreB);
+  if (Number.isNaN(scoreA) || Number.isNaN(scoreB) || scoreA === scoreB) return 1;
+  if (side === "A" && scoreA < scoreB) return 0.42;
+  if (side === "B" && scoreB < scoreA) return 0.42;
+  return 1;
+}
+
 async function openStoryArt(type) {
   const item = getCurrentItem();
   const data = record(item.id);
@@ -691,22 +753,28 @@ async function openStoryArt(type) {
     showToast("Essa arte precisa de duas equipes na partida.");
     return;
   }
+  if (type === "photos" && !data.editedPhotosUrl.trim()) {
+    showToast("Preencha o link das fotos editadas antes de gerar a arte.");
+    return;
+  }
   if (type === "result" && !hasCompleteScore(data)) {
     showToast("Coloque o placar dos dois times antes de gerar o resultado.");
     return;
   }
 
   els.storyModal.hidden = false;
-  els.storyTitle.textContent = type === "result" ? "Arte de resultado" : "Arte de início";
+  els.storyTitle.textContent = type === "photos" ? "Arte de fotos" : type === "result" ? "Arte de resultado" : "Arte de início";
   els.downloadStory.disabled = true;
   els.shareStory.disabled = true;
   currentStory = {
     blob: null,
     fileName: storyFileName(item, type),
-    title: `${storyLabel(type)} - ${item.modality}`
+    title: `${storyLabel(type)} - ${item.modality}`,
+    linkToCopy: type === "photos" ? data.editedPhotosUrl.trim() : ""
   };
 
   await drawStory(type, item, data);
+  if (type === "photos") await copyText(data.editedPhotosUrl, "Link das fotos copiado.");
   if (window.lucide) lucide.createIcons();
 }
 
@@ -724,10 +792,14 @@ async function drawStory(type, item, data) {
   ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
   ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
 
-  drawStoryText(ctx, storyLabel(type), type === "result" ? 520 : 555, 72, 900);
+  const isResult = type === "result";
+  const isPhotos = type === "photos";
+  drawStoryText(ctx, storyLabel(type), isResult ? 520 : isPhotos ? 535 : 555, 72, 900);
 
-  const logoSize = type === "result" ? 285 : 330;
-  const logoY = type === "result" ? 785 : 850;
+  const logoSize = isResult ? 292 : isPhotos ? 285 : 330;
+  const logoY = isResult ? 785 : isPhotos ? 810 : 850;
+  const logoAX = 320;
+  const logoBX = 760;
   const logoA = TEAM_LOGOS[item.teamA];
   const logoB = TEAM_LOGOS[item.teamB];
 
@@ -737,21 +809,31 @@ async function drawStory(type, item, data) {
   ctx.shadowOffsetY = 10;
 
   try {
-    drawContainedImage(ctx, await loadImage(logoA), 340, logoY, logoSize, logoSize);
+    ctx.globalAlpha = loserOpacity(data, "A");
+    drawContainedImage(ctx, await loadImage(logoA), logoAX, logoY, logoSize, logoSize);
   } catch {
-    drawLogoFallback(ctx, item.teamA, 340, logoY, logoSize);
+    ctx.globalAlpha = loserOpacity(data, "A");
+    drawLogoFallback(ctx, item.teamA, logoAX, logoY, logoSize);
   }
 
   try {
-    drawContainedImage(ctx, await loadImage(logoB), 740, logoY, logoSize, logoSize);
+    ctx.globalAlpha = loserOpacity(data, "B");
+    drawContainedImage(ctx, await loadImage(logoB), logoBX, logoY, logoSize, logoSize);
   } catch {
-    drawLogoFallback(ctx, item.teamB, 740, logoY, logoSize);
+    ctx.globalAlpha = loserOpacity(data, "B");
+    drawLogoFallback(ctx, item.teamB, logoBX, logoY, logoSize);
   }
+  ctx.globalAlpha = 1;
   ctx.restore();
 
-  if (type === "result") {
-    drawStoryScore(ctx, data);
-    drawStoryText(ctx, item.modality.toUpperCase(), 1265, 64, 900);
+  drawVersusStory(ctx, logoY);
+
+  if (isResult) {
+    drawScoreNumber(ctx, data.scoreA, logoAX, 1110);
+    drawScoreNumber(ctx, data.scoreB, logoBX, 1110);
+  } else if (isPhotos) {
+    drawStoryText(ctx, "LINK COPIADO", 1115, 48, 820);
+    drawStoryText(ctx, item.modality.toUpperCase(), 1270, 62, 900);
   } else {
     drawStoryText(ctx, item.modality.toUpperCase(), 1265, 72, 940);
   }
@@ -786,11 +868,17 @@ async function shareCurrentStory() {
   if (!currentStory.blob) return;
   const file = new File([currentStory.blob], currentStory.fileName, { type: "image/png" });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (currentStory.linkToCopy) {
+      await copyText(currentStory.linkToCopy, "Link copiado para enviar junto.");
+    }
     await navigator.share({
       files: [file],
       title: currentStory.title
     });
     return;
+  }
+  if (currentStory.linkToCopy) {
+    await copyText(currentStory.linkToCopy, "Link copiado para enviar junto.");
   }
   downloadCurrentStory();
   showToast("Compartilhamento não disponível aqui. Baixei a arte para você postar pelo celular.");

@@ -582,6 +582,14 @@ select:focus {
   border-color: var(--blue);
 }
 
+.generate-art.full {
+  width: 100%;
+}
+
+.art-card {
+  align-content: space-between;
+}
+
 .open-link.disabled {
   pointer-events: none;
   opacity: 0.42;
