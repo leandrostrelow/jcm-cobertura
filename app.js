@@ -1,5 +1,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzF1MGAmojETsvqyoxybuBjDN3FRh4ivw785S1B9omphFuQ5Uuq8nrxla8SgHDedundxg/exec";
 const storageKey = "jcm-simple-coverage-v2";
+const notificationKey = "jcm-simple-notifications-v1";
+const remotePollIntervalMs = 12000;
 const localSchedule = window.JCM_SCHEDULE || [];
 const STORY_BACKGROUNDS = {
   start: "story-background-inicio.png",
@@ -20,8 +22,13 @@ const TEAM_LOGOS = {
 
 let schedule = [...localSchedule];
 let state = readState();
+let notifications = readNotifications();
 let selectedId = schedule[0]?.id;
 let remoteReady = false;
+let remotePollTimer = null;
+let savingRemote = false;
+let notificationSoundReady = false;
+let notificationAudioContext = null;
 const saveTimers = {};
 
 const els = {
@@ -30,6 +37,10 @@ const els = {
   prevGame: document.querySelector("#prevGame"),
   nextGame: document.querySelector("#nextGame"),
   matchCard: document.querySelector("#matchCard"),
+  notificationCenter: document.querySelector("#notificationCenter"),
+  notificationList: document.querySelector("#notificationList"),
+  enableSound: document.querySelector("#enableSound"),
+  clearNotifications: document.querySelector("#clearNotifications"),
   toast: document.querySelector("#toast"),
   syncStatus: document.querySelector("#syncStatus"),
   storyModal: document.querySelector("#storyModal"),
@@ -56,6 +67,19 @@ function readState() {
 
 function saveState() {
   localStorage.setItem(storageKey, JSON.stringify(state));
+}
+
+function readNotifications() {
+  try {
+    const value = JSON.parse(localStorage.getItem(notificationKey)) || [];
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveNotifications() {
+  localStorage.setItem(notificationKey, JSON.stringify(notifications.slice(0, 30)));
 }
 
 function defaultRecord() {
@@ -612,6 +636,121 @@ function showToast(message) {
   showToast.timer = window.setTimeout(() => els.toast.classList.remove("show"), 2300);
 }
 
+function renderNotifications() {
+  if (!els.notificationList) return;
+  els.notificationCenter.classList.toggle("has-alerts", notifications.length > 0);
+  els.notificationList.innerHTML = notifications.length
+    ? notifications.map(renderNotification).join("")
+    : `<div class="notification-empty">
+        <i data-lucide="bell"></i>
+        <span>Aguardando avisos da equipe em campo.</span>
+      </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderNotification(notification) {
+  return `
+    <article class="notification-item">
+      <div class="notification-icon">
+        <i data-lucide="hard-drive-download"></i>
+      </div>
+      <div>
+        <h3>${escapeHtml(notification.title)}</h3>
+        <p>${escapeHtml(notification.body)}</p>
+        <span>${escapeHtml(notification.time)}</span>
+      </div>
+      <button class="secondary-button slim" type="button" data-open-notification="${escapeHtml(notification.itemId)}">
+        Abrir
+      </button>
+    </article>
+  `;
+}
+
+function addNotification(notification) {
+  notifications = [notification, ...notifications].slice(0, 20);
+  saveNotifications();
+  renderNotifications();
+  playNotificationSound();
+  showToast(notification.title);
+}
+
+function detectRemoteNotifications(nextSchedule, nextState) {
+  if (!remoteReady) return;
+  Object.entries(nextState).forEach(([id, nextData]) => {
+    const previousData = state[id];
+    if (!previousData || previousData.originalPhotosSent || !nextData.originalPhotosSent) return;
+    const item = nextSchedule.find((game) => game.id === id) || schedule.find((game) => game.id === id);
+    if (!item) return;
+    addNotification({
+      id: `backup-${id}-${Date.now()}`,
+      type: "backup-originals",
+      itemId: id,
+      title: "Backup originais finalizado",
+      body: `${item.time} - ${item.modality} - ${matchTitle(item)}. Fotos prontas para seleção/edição.`,
+      time: formatTimestamp(nowIso())
+    });
+  });
+}
+
+function matchTitle(item) {
+  if (item.teamA && item.teamB) return `${item.teamA} x ${item.teamB}`;
+  return item.participants || item.phase || item.modality;
+}
+
+function openNotificationItem(id) {
+  if (!schedule.some((item) => item.id === id)) return;
+  selectedId = id;
+  render();
+  els.matchCard.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function clearNotifications() {
+  notifications = [];
+  saveNotifications();
+  renderNotifications();
+}
+
+function createNotificationAudioContext() {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return null;
+  notificationAudioContext ||= new AudioContext();
+  return notificationAudioContext;
+}
+
+async function enableNotificationSound() {
+  const context = createNotificationAudioContext();
+  if (!context) {
+    showToast("Este navegador não liberou som interno.");
+    return;
+  }
+  if (context.state === "suspended") await context.resume();
+  notificationSoundReady = true;
+  playNotificationSound();
+  showToast("Som das notificações ativado.");
+}
+
+function playNotificationSound() {
+  const context = createNotificationAudioContext();
+  if (!context || (!notificationSoundReady && context.state === "suspended")) return;
+  if (context.state === "suspended") context.resume().catch(() => {});
+  const now = context.currentTime;
+  const gain = context.createGain();
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+  gain.connect(context.destination);
+
+  [740, 980].forEach((frequency, index) => {
+    const oscillator = context.createOscillator();
+    const start = now + index * 0.18;
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(frequency, start);
+    oscillator.connect(gain);
+    oscillator.start(start);
+    oscillator.stop(start + 0.16);
+  });
+}
+
 function storyLabel(type) {
   if (type === "photos") return "FOTOS DISPONÍVEIS";
   return type === "result" ? "PLACAR DO JOGO" : "INÍCIO DO JOGO";
@@ -953,18 +1092,36 @@ function selectGameOffset(offset, message) {
   showToast(message);
 }
 
-async function loadRemoteData() {
-  setSyncStatus("Conectando...", "saving");
+function shouldPauseRemoteRefresh() {
+  const active = document.activeElement;
+  const editingField = active && els.matchCard.contains(active) && ["INPUT", "SELECT", "TEXTAREA"].includes(active.tagName);
+  return savingRemote || editingField;
+}
+
+function startRemotePolling() {
+  window.clearInterval(remotePollTimer);
+  remotePollTimer = window.setInterval(() => {
+    if (shouldPauseRemoteRefresh()) return;
+    loadRemoteData({ silent: true });
+  }, remotePollIntervalMs);
+}
+
+async function loadRemoteData(options = {}) {
+  const silent = !!options.silent;
+  if (!silent) setSyncStatus("Conectando...", "saving");
   try {
     const response = await fetch(`${API_URL}?action=list&t=${Date.now()}`);
     const payload = await response.json();
     if (!payload.ok) throw new Error(payload.error || "Erro ao carregar planilha");
 
-    schedule = payload.rows.map(rowToItem).filter((item) => item.id);
-    state = payload.rows.reduce((acc, row) => {
+    const nextSchedule = payload.rows.map(rowToItem).filter((item) => item.id);
+    const nextState = payload.rows.reduce((acc, row) => {
       if (row.ID) acc[row.ID] = rowToRecord(row);
       return acc;
     }, {});
+    detectRemoteNotifications(nextSchedule, nextState);
+    schedule = nextSchedule;
+    state = nextState;
     remoteReady = true;
     saveState();
     if (!schedule.some((item) => item.id === selectedId)) selectedId = schedule[0]?.id;
@@ -973,7 +1130,7 @@ async function loadRemoteData() {
   } catch (error) {
     remoteReady = false;
     setSyncStatus("Modo local", "offline");
-    showToast("Não consegui carregar a planilha. O app ficou em modo local.");
+    if (!silent) showToast("Não consegui carregar a planilha. O app ficou em modo local.");
     render();
   }
 }
@@ -987,6 +1144,7 @@ function queueSave(id, immediate = false) {
 
 async function saveRemoteRecord(id) {
   if (!remoteReady) return;
+  savingRemote = true;
   setSyncStatus("Salvando...", "saving");
   try {
     const response = await fetch(API_URL, {
@@ -1005,6 +1163,8 @@ async function saveRemoteRecord(id) {
   } catch (error) {
     setSyncStatus("Erro ao salvar", "offline");
     showToast("Não consegui salvar na planilha. Confira a conexão ou a implantação do Apps Script.");
+  } finally {
+    savingRemote = false;
   }
 }
 
@@ -1029,6 +1189,18 @@ function bindEvents() {
 
   els.prevGame.addEventListener("click", () => selectGameOffset(-1, "Partida anterior selecionada."));
   els.nextGame.addEventListener("click", () => selectGameOffset(1, "Próxima partida selecionada."));
+
+  els.enableSound.addEventListener("click", () => {
+    enableNotificationSound().catch(() => showToast("Não consegui ativar o som agora."));
+  });
+
+  els.clearNotifications.addEventListener("click", clearNotifications);
+
+  els.notificationList.addEventListener("click", (event) => {
+    const open = event.target.closest("[data-open-notification]");
+    if (!open) return;
+    openNotificationItem(open.dataset.openNotification);
+  });
 
   els.closeStory.addEventListener("click", closeStoryModal);
   els.downloadStory.addEventListener("click", downloadCurrentStory);
@@ -1117,5 +1289,7 @@ function bindEvents() {
 
 bindEvents();
 initFilters();
+renderNotifications();
 render();
 loadRemoteData();
+startRemotePolling();

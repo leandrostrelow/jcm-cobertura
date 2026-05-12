@@ -45,6 +45,26 @@
         </div>
       </section>
 
+      <section id="notificationCenter" class="notification-center" aria-live="polite">
+        <div class="notification-head">
+          <div>
+            <p>Notificações da operação</p>
+            <h2>Backups e próximas ações</h2>
+          </div>
+          <div class="notification-actions">
+            <button id="enableSound" class="secondary-button slim" type="button">
+              <i data-lucide="volume-2"></i>
+              <span>Ativar som</span>
+            </button>
+            <button id="clearNotifications" class="secondary-button slim" type="button">
+              <i data-lucide="check-check"></i>
+              <span>Limpar</span>
+            </button>
+          </div>
+        </div>
+        <div id="notificationList" class="notification-list"></div>
+      </section>
+
       <section id="matchCard" class="match-card" aria-live="polite"></section>
     </main>
 
