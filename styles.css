@@ -223,22 +223,22 @@ select:focus {
 
 .meta-row {
   display: grid;
-  grid-template-columns: minmax(210px, 0.9fr) minmax(124px, 0.36fr);
-  gap: 10px;
-  align-items: stretch;
+  grid-template-columns: minmax(180px, auto) minmax(110px, auto);
+  gap: 18px;
+  align-items: center;
+  justify-content: start;
 }
 
 .time-card {
   display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: 7px;
-  min-height: 136px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  padding: 14px 16px;
-  text-align: center;
+  justify-items: start;
+  gap: 6px;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
 }
 
 .match-date-line {
@@ -252,12 +252,12 @@ select:focus {
 .coverage-summary {
   display: grid;
   align-content: center;
-  gap: 7px;
-  min-height: 136px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fafafa;
-  padding: 14px;
+  gap: 5px;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .coverage-row {
@@ -318,8 +318,8 @@ select:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  font-size: clamp(2.35rem, 4.45vw, 3.35rem);
+  min-height: 44px;
+  font-size: clamp(2.15rem, 4vw, 3rem);
   font-weight: 950;
   line-height: 1;
 }
@@ -330,7 +330,7 @@ select:focus {
   align-items: center;
   gap: 14px;
   width: 100%;
-  padding-left: 8px;
+  padding-left: 0;
 }
 
 .play-button {
@@ -522,14 +522,15 @@ select:focus {
 
 .link-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(190px, 1.1fr) minmax(130px, 0.7fr) minmax(130px, 0.7fr) minmax(210px, 1.25fr) minmax(170px, 0.95fr);
+  gap: 8px;
+  align-items: stretch;
 }
 
 .link-item {
   display: grid;
-  gap: 8px;
-  padding: 12px;
+  gap: 7px;
+  padding: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
@@ -545,13 +546,13 @@ select:focus {
 .link-item h3 {
   margin: 0;
   color: var(--blue);
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .link-actions {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 8px;
+  gap: 6px;
 }
 
 .link-actions.has-generator {
@@ -727,9 +728,12 @@ button:disabled {
 
 @media (max-width: 1080px) {
   .picker,
-  .match-top,
-  .link-grid {
+  .match-top {
     grid-template-columns: 1fr;
+  }
+
+  .link-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 
   .scoreboard {
@@ -805,6 +809,10 @@ button:disabled {
   }
 
   .link-actions.has-generator {
+    grid-template-columns: 1fr;
+  }
+
+  .link-grid {
     grid-template-columns: 1fr;
   }
 }
