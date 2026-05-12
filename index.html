@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JCM | Ficha de Cobertura</title>
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">JCM</div>
+        <div>
+          <p>Central de cobertura</p>
+          <h1>Jogos Capixaba de Medicina</h1>
+        </div>
+      </div>
+      <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1bCQtDZ-3QunThSAsmB2Tn3WIqjYycgneT0B8PhxnE78/edit" target="_blank" rel="noreferrer">
+        <i data-lucide="table-2"></i>
+        <span>Planilha base</span>
+      </a>
+      <div id="syncStatus" class="sync-status">Conectando...</div>
+    </header>
+
+    <main class="app-shell">
+      <section class="picker" aria-label="Selecionar partida">
+        <label>
+          <span>Data</span>
+          <select id="dateFilter"></select>
+        </label>
+        <label class="wide">
+          <span>Partida / evento</span>
+          <select id="gamePicker"></select>
+        </label>
+        <button id="nextPending" class="secondary-button" type="button">
+          <i data-lucide="skip-forward"></i>
+          <span>Próxima pendente</span>
+        </button>
+      </section>
+
+      <section id="matchCard" class="match-card" aria-live="polite"></section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="data/schedule-data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
