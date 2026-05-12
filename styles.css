@@ -223,9 +223,9 @@ select:focus {
 
 .meta-row {
   display: grid;
-  grid-template-columns: minmax(180px, 0.9fr) minmax(210px, 1fr);
-  gap: 16px;
-  align-items: stretch;
+  grid-template-columns: minmax(220px, 0.85fr) auto;
+  gap: 18px;
+  align-items: start;
 }
 
 .time-card {
@@ -247,6 +247,19 @@ select:focus {
   font-weight: 950;
   line-height: 1;
   text-transform: uppercase;
+}
+
+.coverage-summary {
+  display: grid;
+  gap: 6px;
+  padding-top: 10px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.coverage-summary strong {
+  color: var(--ink);
 }
 
 .pill {
@@ -416,53 +429,6 @@ select:focus {
   font-weight: 950;
 }
 
-.progress-box {
-  width: 100%;
-  min-height: 158px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 18px 20px;
-  background: #fafafa;
-}
-
-.progress-box h2 {
-  margin: 0 0 8px;
-  font-size: 1rem;
-}
-
-.progress-track {
-  height: 10px;
-  border-radius: 999px;
-  background: #eeeeee;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  width: 0%;
-  background: var(--green);
-}
-
-.progress-box p {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 0.86rem;
-  font-weight: 750;
-}
-
-.coverage-time {
-  display: grid;
-  gap: 4px;
-  margin-top: 12px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 750;
-}
-
-.coverage-time strong {
-  color: var(--ink);
-}
-
 .management {
   display: grid;
   gap: 22px;
@@ -621,9 +587,6 @@ select:focus {
     padding-top: 0;
   }
 
-  .progress-box {
-    justify-self: stretch;
-  }
 }
 
 @media (max-width: 760px) {
@@ -644,8 +607,7 @@ select:focus {
     grid-template-columns: 1fr;
   }
 
-  .time-card,
-  .progress-box {
+  .time-card {
     min-height: 0;
   }
 

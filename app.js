@@ -335,7 +335,6 @@ function render() {
   const status = statusForRecord(data);
   const statusClass = status === "Finalizada" ? "finalized" : status === "Fim de jogo" ? "ended" : "";
   const coverageEnded = status === "Fim de jogo" || status === "Finalizada";
-  const prog = progress(item);
 
   els.matchCard.innerHTML = `
     <div class="match-top">
@@ -347,15 +346,10 @@ function render() {
             <span class="pill venue">${escapeHtml(item.venue)}</span>
           </div>
 
-          <div class="progress-box">
-            <h2>Checklist da partida</h2>
-            <div class="progress-track"><div class="progress-fill" style="width:${prog.percent}%"></div></div>
-            <p>${prog.done} de ${prog.total} ações feitas</p>
-            <div class="coverage-time">
-              <span>Início: ${escapeHtml(formatTimestamp(data.startedAt))}</span>
-              <span>Fim: ${escapeHtml(formatTimestamp(data.endedAt))}</span>
-              <strong>Tempo: ${escapeHtml(data.coverageDuration || "-")}</strong>
-            </div>
+          <div class="coverage-summary">
+            <span>Início: ${escapeHtml(formatTimestamp(data.startedAt))}</span>
+            <span>Fim: ${escapeHtml(formatTimestamp(data.endedAt))}</span>
+            <strong>Tempo: ${escapeHtml(data.coverageDuration || "-")}</strong>
           </div>
         </div>
 
