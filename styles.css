@@ -209,26 +209,33 @@ select:focus {
 
 .match-top {
   display: grid;
-  grid-template-columns: minmax(220px, 0.72fr) minmax(380px, 1.35fr) minmax(220px, 0.72fr);
-  gap: 18px;
-  padding: 28px clamp(16px, 3vw, 34px) 24px;
+  grid-template-columns: minmax(210px, 0.68fr) minmax(560px, 1.55fr) minmax(250px, 0.72fr);
+  gap: clamp(16px, 2.5vw, 34px);
+  align-items: center;
+  padding: 22px clamp(16px, 3vw, 34px) 20px;
   border-bottom: 1px solid var(--line);
 }
 
 .time-cluster {
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: 10px;
+}
+
+.date-row {
   display: flex;
   flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 10px;
+  gap: 8px;
 }
 
 .pill {
   display: inline-flex;
   align-items: center;
-  min-height: 38px;
+  min-height: 34px;
   width: fit-content;
   border-radius: 999px;
-  padding: 0 14px;
+  padding: 0 13px;
   font-weight: 900;
 }
 
@@ -254,8 +261,8 @@ select:focus {
 .time {
   display: inline-flex;
   align-items: center;
-  min-height: 38px;
-  font-size: clamp(2rem, 5vw, 3.15rem);
+  min-height: 52px;
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
   font-weight: 950;
   line-height: 1;
 }
@@ -265,7 +272,7 @@ select:focus {
   align-items: center;
   gap: 12px;
   width: 100%;
-  margin-top: 12px;
+  margin-top: 30px;
 }
 
 .play-button {
@@ -308,7 +315,7 @@ select:focus {
 .scoreboard {
   display: grid;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .match-tags {
@@ -318,11 +325,17 @@ select:focus {
   gap: 10px;
 }
 
+.phase-line {
+  display: flex;
+  justify-content: center;
+  margin-top: -2px;
+}
+
 .score-line {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) 74px 28px 74px minmax(150px, 1fr);
+  grid-template-columns: minmax(170px, 1fr) 88px 34px 88px minmax(170px, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .team {
@@ -330,7 +343,7 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: clamp(1.05rem, 2vw, 1.42rem);
+  font-size: clamp(1.25rem, 2.3vw, 1.9rem);
   font-weight: 950;
   line-height: 1.05;
   overflow-wrap: anywhere;
@@ -346,8 +359,8 @@ select:focus {
 }
 
 .team-logo {
-  width: clamp(56px, 5.4vw, 72px);
-  height: clamp(56px, 5.4vw, 72px);
+  width: clamp(66px, 6.4vw, 92px);
+  height: clamp(66px, 6.4vw, 92px);
   flex: 0 0 auto;
   border-radius: 0;
   object-fit: contain;
@@ -357,17 +370,17 @@ select:focus {
 }
 
 .score-input {
-  height: 74px;
+  height: 88px;
   padding: 0;
   text-align: center;
-  font-size: 2rem;
+  font-size: 2.15rem;
   font-weight: 950;
 }
 
 .versus {
   text-align: center;
   color: var(--blue);
-  font-size: 1.7rem;
+  font-size: 2rem;
   font-weight: 950;
 }
 
@@ -379,7 +392,7 @@ select:focus {
 
 .progress-box {
   justify-self: end;
-  width: min(260px, 100%);
+  width: min(280px, 100%);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
@@ -597,13 +610,23 @@ select:focus {
     padding-top: 20px;
   }
 
+  .play-line {
+    margin-top: 12px;
+  }
+
   .score-line {
-    grid-template-columns: 1fr 58px 20px 58px 1fr;
+    grid-template-columns: minmax(82px, 1fr) 58px 20px 58px minmax(82px, 1fr);
     gap: 8px;
   }
 
   .team {
-    font-size: 1.05rem;
+    gap: 6px;
+    font-size: 0.95rem;
+  }
+
+  .team-logo {
+    width: 42px;
+    height: 42px;
   }
 
   .score-input {
@@ -634,16 +657,6 @@ select:focus {
   .pill {
     min-height: 34px;
     padding: 0 10px;
-  }
-
-  .score-line {
-    grid-template-columns: 1fr;
-  }
-
-  .team.left,
-  .team.right {
-    justify-content: center;
-    text-align: center;
   }
 
   .versus {

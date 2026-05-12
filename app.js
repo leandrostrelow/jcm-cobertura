@@ -340,9 +340,11 @@ function render() {
   els.matchCard.innerHTML = `
     <div class="match-top">
       <div class="time-cluster">
-        <span class="pill date">${escapeHtml(shortDate(item.date))}</span>
+        <div class="date-row">
+          <span class="pill day">${escapeHtml(item.weekday)}</span>
+          <span class="pill date">${escapeHtml(shortDate(item.date))}</span>
+        </div>
         <span class="time">${escapeHtml(item.time)}</span>
-        <span class="pill day">${escapeHtml(item.weekday)}</span>
         <span class="pill venue">${escapeHtml(item.venue)}</span>
         <div class="play-line">
           <button class="play-button ${data.started && !coverageEnded ? "active" : ""} ${coverageEnded ? "ended" : ""}" type="button" data-toggle="started">
@@ -356,9 +358,11 @@ function render() {
       <div class="scoreboard">
         <div class="match-tags">
           <span class="pill modality">${escapeHtml(item.modality)}</span>
-          <span class="pill phase">${escapeHtml(item.phase)}</span>
         </div>
         ${renderScore(item, data)}
+        <div class="phase-line">
+          <span class="pill phase">${escapeHtml(item.phase)}</span>
+        </div>
       </div>
 
       <div class="progress-box">
@@ -407,7 +411,7 @@ function render() {
           ${doneButton("originalPhotosSent", "Backup originais", data.originalPhotosSent, "upload-cloud")}
           ${doneButton("selectionDone", "Seleção", data.selectionDone, "list-checks")}
           ${doneButton("editingDone", "Edição", data.editingDone, "pen-line")}
-          ${doneButton("reviewDone", "Conferência", data.reviewDone, "scan-check")}
+          ${doneButton("reviewDone", "Conferência", data.reviewDone, "badge-check")}
           ${doneButton("editedPhotosDone", "Fotos editadas", data.editedPhotosDone, "images")}
         </div>
       </section>
