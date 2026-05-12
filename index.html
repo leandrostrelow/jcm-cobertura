@@ -45,7 +45,17 @@
         </div>
       </section>
 
-      <section id="matchCard" class="match-card" aria-live="polite"></section>
+      <section class="match-stage" aria-label="Navegação visual de partidas">
+        <button id="prevPreviewCard" class="match-preview previous" type="button" aria-label="Abrir jogo anterior"></button>
+        <button id="stagePrevGame" class="stage-arrow" type="button" aria-label="Jogo anterior">
+          <i data-lucide="chevron-left"></i>
+        </button>
+        <section id="matchCard" class="match-card" aria-live="polite"></section>
+        <button id="stageNextGame" class="stage-arrow" type="button" aria-label="Próximo jogo">
+          <i data-lucide="chevron-right"></i>
+        </button>
+        <button id="nextPreviewCard" class="match-preview next" type="button" aria-label="Abrir próximo jogo"></button>
+      </section>
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
