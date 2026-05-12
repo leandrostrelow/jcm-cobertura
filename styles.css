@@ -5,11 +5,11 @@
   --paper: #f7f7f5;
   --panel: #ffffff;
   --red: #e11d48;
-  --blue: #1473e6;
+  --blue: #7c3aed;
   --amber: #f59e0b;
   --green: #059669;
   --soft-red: #fff1f2;
-  --soft-blue: #eff6ff;
+  --soft-blue: #f3e8ff;
   --soft-amber: #fffbeb;
   --soft-green: #ecfdf5;
   --shadow: 0 12px 28px rgba(20, 20, 20, 0.08);
@@ -278,6 +278,12 @@ select:focus {
   color: var(--red);
 }
 
+.play-button.ended {
+  border-color: #ddd6fe;
+  background: var(--soft-blue);
+  color: var(--blue);
+}
+
 .status {
   display: inline-flex;
   align-items: center;
@@ -292,6 +298,11 @@ select:focus {
 .status.finalized {
   background: var(--soft-green);
   color: var(--green);
+}
+
+.status.ended {
+  background: var(--soft-blue);
+  color: var(--blue);
 }
 
 .scoreboard {
@@ -316,6 +327,9 @@ select:focus {
 
 .team {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: clamp(1.25rem, 2.7vw, 2rem);
   font-weight: 950;
   line-height: 1.05;
@@ -323,7 +337,22 @@ select:focus {
 }
 
 .team.left {
+  justify-content: flex-end;
   text-align: right;
+}
+
+.team.right {
+  justify-content: flex-start;
+}
+
+.team-logo {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--line);
 }
 
 .score-input {
@@ -379,6 +408,19 @@ select:focus {
   color: var(--muted);
   font-size: 0.86rem;
   font-weight: 750;
+}
+
+.coverage-time {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.coverage-time strong {
+  color: var(--ink);
 }
 
 .management {
@@ -487,7 +529,7 @@ select:focus {
 
 .done-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(130px, 1fr));
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
   gap: 8px;
 }
 
@@ -594,6 +636,7 @@ select:focus {
 
   .team.left,
   .team.right {
+    justify-content: center;
     text-align: center;
   }
 

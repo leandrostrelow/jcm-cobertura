@@ -1,6 +1,14 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzF1MGAmojETsvqyoxybuBjDN3FRh4ivw785S1B9omphFuQ5Uuq8nrxla8SgHDedundxg/exec";
 const storageKey = "jcm-simple-coverage-v2";
 const localSchedule = window.JCM_SCHEDULE || [];
+const TEAM_LOGOS = {
+  "Multivix Vitória": "assets/logos/multivix-vitoria.png",
+  "Multivix Cachoeiro": "assets/logos/multivix-cachoeiro.png",
+  "UFES": "assets/logos/ufes.png",
+  "EMESCAM": "assets/logos/emescam.png",
+  "UVV": "assets/logos/uvv.png",
+  "UNESC": "assets/logos/unesc.png"
+};
 
 let schedule = [...localSchedule];
 let state = readState();
@@ -35,6 +43,9 @@ function defaultRecord() {
     scoreB: "",
     started: false,
     resultDone: false,
+    startedAt: "",
+    endedAt: "",
+    coverageDuration: "",
     originalPhotosSent: false,
     startArtDone: false,
     resultArtDone: false,
@@ -93,7 +104,10 @@ function rowToItem(row) {
 function rowToRecord(row) {
   const finalizada = bool(row.Finalizada);
   const started = bool(row["Início feito"]) || finalizada || row.Status === "Em cobertura" || row.Status === "Finalizada";
-  const resultDone = bool(row["Resultado feito"]) || finalizada;
+  const startedAt = normalizeText(row["Início em"]);
+  const endedAt = normalizeText(row["Fim de jogo em"]);
+  const coverageDuration = normalizeText(row["Tempo cobertura"]);
+  const resultDone = bool(row["Resultado feito"]) || !!endedAt || finalizada;
   const originalPhotosSent = bool(row["Originais enviadas"]) || finalizada;
   const startArtDone = bool(row["Arte início feita"]) || finalizada;
   const resultArtDone = bool(row["Arte resultado feita"]) || finalizada;
@@ -125,6 +139,9 @@ function rowToRecord(row) {
     scoreB: normalizeText(row["Placar B"]),
     started,
     resultDone,
+    startedAt,
+    endedAt,
+    coverageDuration,
     originalPhotosSent,
     startArtDone,
     resultArtDone,
@@ -148,9 +165,12 @@ function recordToSheetData(id) {
   return {
     "Placar A": data.scoreA,
     "Placar B": data.scoreB,
-    "Status": finalized ? "Finalizada" : data.started ? "Em cobertura" : "Pendente",
+    "Status": statusForRecord(data),
     "Início feito": data.started,
     "Resultado feito": data.resultDone,
+    "Início em": data.startedAt,
+    "Fim de jogo em": data.endedAt,
+    "Tempo cobertura": data.coverageDuration,
     "Fotógrafo 1": data.photographers[0]?.name || "",
     "Nº SD 1": data.photographers[0]?.sd || "",
     "Backup 1": !!data.photographers[0]?.backup,
@@ -190,12 +210,22 @@ function getCurrentItem() {
   return schedule.find((item) => item.id === selectedId) || schedule[0];
 }
 
+function hasCompleteScore(data) {
+  return data.scoreA.trim() !== "" && data.scoreB.trim() !== "";
+}
+
+function statusForRecord(data) {
+  if (isRecordFinalized(data)) return "Finalizada";
+  if (data.resultDone || data.endedAt) return "Fim de jogo";
+  if (data.started) return "Em cobertura";
+  return "Pendente";
+}
+
 function isRecordFinalized(data) {
   return data.started &&
-    data.resultDone &&
-    data.originalPhotosSent &&
     data.startArtDone &&
     data.resultArtDone &&
+    data.originalPhotosSent &&
     data.editedPhotosDone;
 }
 
@@ -207,10 +237,9 @@ function progress(item) {
   const data = record(item.id);
   const checks = [
     data.started,
-    data.resultDone,
-    data.originalPhotosSent,
     data.startArtDone,
     data.resultArtDone,
+    data.originalPhotosSent,
     data.editedPhotosDone
   ];
   const done = checks.filter(Boolean).length;
@@ -220,6 +249,35 @@ function progress(item) {
 function optionLabel(item) {
   const opponent = item.teamA && item.teamB ? `${item.teamA} x ${item.teamB}` : item.participants || item.phase;
   return `${item.time} - ${item.modality} - ${item.phase} - ${opponent}`;
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function formatTimestamp(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function formatDuration(startIso, endIso) {
+  if (!startIso || !endIso) return "";
+  const start = new Date(startIso).getTime();
+  const end = new Date(endIso).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return "";
+  const totalMinutes = Math.round((end - start) / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours && minutes) return `${hours}h ${minutes}min`;
+  if (hours) return `${hours}h`;
+  return `${minutes}min`;
 }
 
 function setSyncStatus(text, className) {
@@ -256,7 +314,9 @@ function render() {
     return;
   }
   const data = record(item.id);
-  const status = isFinalized(item) ? "Finalizada" : data.started ? "Em cobertura" : "Pendente";
+  const status = statusForRecord(data);
+  const statusClass = status === "Finalizada" ? "finalized" : status === "Fim de jogo" ? "ended" : "";
+  const coverageEnded = status === "Fim de jogo" || status === "Finalizada";
   const prog = progress(item);
 
   els.matchCard.innerHTML = `
@@ -267,11 +327,11 @@ function render() {
         <span class="pill day">${escapeHtml(item.weekday)}</span>
         <span class="pill venue">${escapeHtml(item.venue)}</span>
         <div class="play-line">
-          <button class="play-button ${data.started ? "active" : ""}" type="button" data-toggle="started">
-            <i data-lucide="${data.started ? "radio" : "play"}"></i>
-            <span>Início</span>
+          <button class="play-button ${data.started && !coverageEnded ? "active" : ""} ${coverageEnded ? "ended" : ""}" type="button" data-toggle="started">
+            <i data-lucide="${coverageEnded ? "square" : data.started ? "radio" : "play"}"></i>
+            <span>${coverageEnded ? "Fim" : "Início"}</span>
           </button>
-          <span class="status ${isFinalized(item) ? "finalized" : ""}">${status}</span>
+          <span class="status ${statusClass}">${status}</span>
         </div>
       </div>
 
@@ -287,6 +347,11 @@ function render() {
         <h2>Checklist da partida</h2>
         <div class="progress-track"><div class="progress-fill" style="width:${prog.percent}%"></div></div>
         <p>${prog.done} de ${prog.total} ações feitas</p>
+        <div class="coverage-time">
+          <span>Início: ${escapeHtml(formatTimestamp(data.startedAt))}</span>
+          <span>Fim: ${escapeHtml(formatTimestamp(data.endedAt))}</span>
+          <strong>Tempo: ${escapeHtml(data.coverageDuration || "-")}</strong>
+        </div>
       </div>
     </div>
 
@@ -316,13 +381,12 @@ function render() {
       </section>
 
       <section class="field-group">
-        <p class="field-title">Fechamento</p>
+        <p class="field-title">Checklist</p>
         <div class="done-grid">
           ${doneButton("started", "Início", data.started, "play")}
-          ${doneButton("resultDone", "Resultado", data.resultDone, "trophy")}
-          ${doneButton("originalPhotosSent", "Originais enviadas", data.originalPhotosSent, "upload-cloud")}
           ${doneButton("startArtDone", "Arte início", data.startArtDone, "badge-check")}
           ${doneButton("resultArtDone", "Arte resultado", data.resultArtDone, "badge-check")}
+          ${doneButton("originalPhotosSent", "Backup originais", data.originalPhotosSent, "upload-cloud")}
           ${doneButton("editedPhotosDone", "Fotos editadas", data.editedPhotosDone, "images")}
         </div>
       </section>
@@ -338,13 +402,21 @@ function renderScore(item, data) {
   }
   return `
     <div class="score-line">
-      <div class="team left">${escapeHtml(item.teamA)}</div>
+      ${renderTeam(item.teamA, "left")}
       <input class="score-input" inputmode="numeric" maxlength="3" value="${escapeHtml(data.scoreA)}" data-field="scoreA" aria-label="Placar ${escapeHtml(item.teamA)}">
       <div class="versus">x</div>
       <input class="score-input" inputmode="numeric" maxlength="3" value="${escapeHtml(data.scoreB)}" data-field="scoreB" aria-label="Placar ${escapeHtml(item.teamB)}">
-      <div class="team right">${escapeHtml(item.teamB)}</div>
+      ${renderTeam(item.teamB, "right")}
     </div>
   `;
+}
+
+function renderTeam(name, side) {
+  const logo = TEAM_LOGOS[name];
+  const img = logo
+    ? `<img class="team-logo" src="${escapeHtml(logo)}" alt="" onerror="this.remove()">`
+    : "";
+  return `<div class="team ${side}">${img}<span>${escapeHtml(name)}</span></div>`;
 }
 
 function renderPhotographer(person, index) {
@@ -396,9 +468,37 @@ function doneButton(field, label, done, icon) {
 
 function updateField(field, value) {
   const item = getCurrentItem();
-  record(item.id)[field] = value;
+  const data = record(item.id);
+  data[field] = value;
+  if (field === "scoreA" || field === "scoreB") {
+    syncScoreCompletion(data);
+  }
   saveState();
   queueSave(item.id);
+}
+
+function syncStartState(data) {
+  if (data.started && !data.startedAt) {
+    data.startedAt = nowIso();
+  }
+  if (!data.started) {
+    data.startedAt = "";
+    data.endedAt = "";
+    data.coverageDuration = "";
+    data.resultDone = false;
+  }
+}
+
+function syncScoreCompletion(data) {
+  if (hasCompleteScore(data)) {
+    data.resultDone = true;
+    if (!data.endedAt) data.endedAt = nowIso();
+    data.coverageDuration = formatDuration(data.startedAt, data.endedAt);
+  } else {
+    data.resultDone = false;
+    data.endedAt = "";
+    data.coverageDuration = "";
+  }
 }
 
 function showToast(message) {
@@ -546,6 +646,10 @@ function bindEvents() {
     if (toggle) {
       const field = toggle.dataset.toggle;
       data[field] = !data[field];
+      if (field === "started") {
+        syncStartState(data);
+        if (data.started) syncScoreCompletion(data);
+      }
       saveState();
       queueSave(item.id, true);
       render();
