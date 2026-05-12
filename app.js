@@ -29,6 +29,10 @@ const els = {
   gamePicker: document.querySelector("#gamePicker"),
   prevGame: document.querySelector("#prevGame"),
   nextGame: document.querySelector("#nextGame"),
+  prevPreviewCard: document.querySelector("#prevPreviewCard"),
+  nextPreviewCard: document.querySelector("#nextPreviewCard"),
+  stagePrevGame: document.querySelector("#stagePrevGame"),
+  stageNextGame: document.querySelector("#stageNextGame"),
   matchCard: document.querySelector("#matchCard"),
   toast: document.querySelector("#toast"),
   syncStatus: document.querySelector("#syncStatus"),
@@ -254,6 +258,12 @@ function statusForRecord(data) {
   return "Pendente";
 }
 
+function statusClassForStatus(status) {
+  if (status === "Finalizada") return "finalized";
+  if (status === "Fim de jogo") return "ended";
+  return "";
+}
+
 function isRecordFinalized(data) {
   return data.started &&
     data.startArtDone &&
@@ -360,11 +370,12 @@ function render() {
   const item = getCurrentItem();
   if (!item) {
     els.matchCard.innerHTML = "";
+    renderPreviews(null);
     return;
   }
   const data = record(item.id);
   const status = statusForRecord(data);
-  const statusClass = status === "Finalizada" ? "finalized" : status === "Fim de jogo" ? "ended" : "";
+  const statusClass = statusClassForStatus(status);
   const coverageEnded = status === "Fim de jogo" || status === "Finalizada";
 
   els.matchCard.innerHTML = `
@@ -452,7 +463,75 @@ function render() {
     </div>
   `;
 
+  renderPreviews(item);
   if (window.lucide) lucide.createIcons();
+}
+
+function renderPreviews(currentItem) {
+  const visible = getVisibleGames();
+  const hasMultiple = !!currentItem && visible.length > 1;
+  const navButtons = [els.prevGame, els.nextGame, els.stagePrevGame, els.stageNextGame].filter(Boolean);
+  navButtons.forEach((button) => {
+    button.disabled = !hasMultiple;
+  });
+
+  renderPreviewButton(els.prevPreviewCard, hasMultiple ? findGameByOffset(-1) : null, currentItem, "Jogo anterior");
+  renderPreviewButton(els.nextPreviewCard, hasMultiple ? findGameByOffset(1) : null, currentItem, "Próximo jogo");
+}
+
+function renderPreviewButton(button, item, currentItem, label) {
+  if (!button) return;
+  const hidden = !item || !currentItem || item.id === currentItem.id;
+  button.hidden = hidden;
+  button.disabled = hidden;
+  button.innerHTML = hidden ? "" : renderPreviewCard(item, label);
+}
+
+function renderPreviewCard(item, label) {
+  const data = record(item.id);
+  const status = statusForRecord(data);
+  const statusClass = statusClassForStatus(status);
+  return `
+    <span class="preview-label">${escapeHtml(label)}</span>
+    <span class="preview-head">
+      <span class="preview-time-block">
+        <strong>${escapeHtml(item.time)}</strong>
+        <span>${escapeHtml(`${item.weekday} ${shortDate(item.date)}`)}</span>
+        <em>${escapeHtml(item.venue)}</em>
+      </span>
+      <span class="preview-status ${statusClass}">${escapeHtml(status)}</span>
+    </span>
+    <span class="preview-tags">
+      <span>${escapeHtml(item.modality)}</span>
+      <span>${escapeHtml(item.phase)}</span>
+    </span>
+    ${item.teamA && item.teamB ? renderPreviewScore(item, data) : `<span class="preview-event">${escapeHtml(item.participants || item.modality)}</span>`}
+  `;
+}
+
+function renderPreviewScore(item, data) {
+  return `
+    <span class="preview-score-line">
+      ${renderPreviewTeam(item.teamA)}
+      <span class="preview-score-box">${escapeHtml(data.scoreA)}</span>
+      <span class="preview-versus">x</span>
+      <span class="preview-score-box">${escapeHtml(data.scoreB)}</span>
+      ${renderPreviewTeam(item.teamB)}
+    </span>
+  `;
+}
+
+function renderPreviewTeam(name) {
+  const logo = TEAM_LOGOS[name];
+  const img = logo
+    ? `<img class="preview-logo" src="${escapeHtml(logo)}" alt="" onerror="this.remove()">`
+    : "";
+  return `
+    <span class="preview-team">
+      ${img}
+      <span>${formatTeamName(name)}</span>
+    </span>
+  `;
 }
 
 function renderScore(item, data) {
@@ -939,6 +1018,14 @@ function findGameByOffset(offset) {
   return visible[nextIndex];
 }
 
+function selectGameOffset(offset, message) {
+  const item = findGameByOffset(offset);
+  if (!item || item.id === selectedId) return;
+  selectedId = item.id;
+  render();
+  showToast(message);
+}
+
 async function loadRemoteData() {
   setSyncStatus("Conectando...", "saving");
   try {
@@ -1013,23 +1100,12 @@ function bindEvents() {
     render();
   });
 
-  els.prevGame.addEventListener("click", () => {
-    const previous = findGameByOffset(-1);
-    if (previous) {
-      selectedId = previous.id;
-      render();
-      showToast("Partida anterior selecionada.");
-    }
-  });
-
-  els.nextGame.addEventListener("click", () => {
-    const next = findGameByOffset(1);
-    if (next) {
-      selectedId = next.id;
-      render();
-      showToast("Próxima partida selecionada.");
-    }
-  });
+  els.prevGame.addEventListener("click", () => selectGameOffset(-1, "Partida anterior selecionada."));
+  els.nextGame.addEventListener("click", () => selectGameOffset(1, "Próxima partida selecionada."));
+  els.stagePrevGame.addEventListener("click", () => selectGameOffset(-1, "Partida anterior selecionada."));
+  els.stageNextGame.addEventListener("click", () => selectGameOffset(1, "Próxima partida selecionada."));
+  els.prevPreviewCard.addEventListener("click", () => selectGameOffset(-1, "Partida anterior selecionada."));
+  els.nextPreviewCard.addEventListener("click", () => selectGameOffset(1, "Próxima partida selecionada."));
 
   els.closeStory.addEventListener("click", closeStoryModal);
   els.downloadStory.addEventListener("click", downloadCurrentStory);
