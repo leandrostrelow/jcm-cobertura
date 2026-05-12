@@ -218,14 +218,14 @@ select:focus {
 
 .match-meta {
   display: grid;
-  gap: 22px;
+  gap: 16px;
 }
 
 .meta-row {
   display: grid;
-  grid-template-columns: minmax(220px, 0.85fr) auto;
-  gap: 18px;
-  align-items: start;
+  grid-template-columns: minmax(220px, 0.95fr) minmax(132px, 0.45fr);
+  gap: 14px;
+  align-items: stretch;
 }
 
 .time-card {
@@ -251,15 +251,33 @@ select:focus {
 
 .coverage-summary {
   display: grid;
-  gap: 6px;
-  padding-top: 10px;
+  align-content: center;
+  gap: 8px;
+  min-height: 152px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 16px;
+}
+
+.coverage-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 850;
 }
 
-.coverage-summary strong {
+.coverage-row span {
+  color: var(--muted);
+}
+
+.coverage-row strong {
   color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.15;
 }
 
 .pill {
@@ -307,7 +325,8 @@ select:focus {
 }
 
 .play-line {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(132px, 0.45fr) minmax(110px, auto);
   align-items: center;
   gap: 14px;
   width: 100%;
@@ -619,11 +638,13 @@ select:focus {
     grid-template-columns: 1fr;
   }
 
-  .time-card {
+  .time-card,
+  .coverage-summary {
     min-height: 0;
   }
 
   .play-line {
+    grid-template-columns: 1fr 1fr;
     padding-left: 0;
   }
 

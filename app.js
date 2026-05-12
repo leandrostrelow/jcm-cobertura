@@ -347,9 +347,18 @@ function render() {
           </div>
 
           <div class="coverage-summary">
-            <span>Início: ${escapeHtml(formatTimestamp(data.startedAt))}</span>
-            <span>Fim: ${escapeHtml(formatTimestamp(data.endedAt))}</span>
-            <strong>Tempo: ${escapeHtml(data.coverageDuration || "-")}</strong>
+            <div class="coverage-row">
+              <span>Início</span>
+              <strong>${escapeHtml(formatTimestamp(data.startedAt))}</strong>
+            </div>
+            <div class="coverage-row">
+              <span>Fim</span>
+              <strong>${escapeHtml(formatTimestamp(data.endedAt))}</strong>
+            </div>
+            <div class="coverage-row">
+              <span>Tempo</span>
+              <strong>${escapeHtml(data.coverageDuration || "-")}</strong>
+            </div>
           </div>
         </div>
 
