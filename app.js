@@ -49,6 +49,9 @@ function defaultRecord() {
     originalPhotosSent: false,
     startArtDone: false,
     resultArtDone: false,
+    selectionDone: false,
+    editingDone: false,
+    reviewDone: false,
     editedPhotosDone: false,
     originalPhotosUrl: "",
     startArtUrl: "",
@@ -111,6 +114,9 @@ function rowToRecord(row) {
   const originalPhotosSent = bool(row["Originais enviadas"]) || finalizada;
   const startArtDone = bool(row["Arte início feita"]) || finalizada;
   const resultArtDone = bool(row["Arte resultado feita"]) || finalizada;
+  const selectionDone = bool(row["Seleção feita"]) || finalizada;
+  const editingDone = bool(row["Edição feita"]) || finalizada;
+  const reviewDone = bool(row["Conferência feita"]) || finalizada;
   const editedPhotosDone = bool(row["Fotos editadas feitas"]) || finalizada;
 
   const photographers = [
@@ -145,6 +151,9 @@ function rowToRecord(row) {
     originalPhotosSent,
     startArtDone,
     resultArtDone,
+    selectionDone,
+    editingDone,
+    reviewDone,
     editedPhotosDone,
     originalPhotosUrl: normalizeText(row["Link fotos originais"]),
     startArtUrl: normalizeText(row["Link arte post início"]),
@@ -186,6 +195,9 @@ function recordToSheetData(id) {
     "Arte início feita": data.startArtDone,
     "Link arte post resultado": data.resultArtUrl,
     "Arte resultado feita": data.resultArtDone,
+    "Seleção feita": data.selectionDone,
+    "Edição feita": data.editingDone,
+    "Conferência feita": data.reviewDone,
     "Link fotos editadas": data.editedPhotosUrl,
     "Fotos editadas feitas": data.editedPhotosDone,
     "Link live ao vivo": data.liveUrl,
@@ -226,6 +238,9 @@ function isRecordFinalized(data) {
     data.startArtDone &&
     data.resultArtDone &&
     data.originalPhotosSent &&
+    data.selectionDone &&
+    data.editingDone &&
+    data.reviewDone &&
     data.editedPhotosDone;
 }
 
@@ -240,6 +255,9 @@ function progress(item) {
     data.startArtDone,
     data.resultArtDone,
     data.originalPhotosSent,
+    data.selectionDone,
+    data.editingDone,
+    data.reviewDone,
     data.editedPhotosDone
   ];
   const done = checks.filter(Boolean).length;
@@ -387,6 +405,9 @@ function render() {
           ${doneButton("startArtDone", "Arte início", data.startArtDone, "badge-check")}
           ${doneButton("resultArtDone", "Arte resultado", data.resultArtDone, "badge-check")}
           ${doneButton("originalPhotosSent", "Backup originais", data.originalPhotosSent, "upload-cloud")}
+          ${doneButton("selectionDone", "Seleção", data.selectionDone, "list-checks")}
+          ${doneButton("editingDone", "Edição", data.editingDone, "pen-line")}
+          ${doneButton("reviewDone", "Conferência", data.reviewDone, "scan-check")}
           ${doneButton("editedPhotosDone", "Fotos editadas", data.editedPhotosDone, "images")}
         </div>
       </section>

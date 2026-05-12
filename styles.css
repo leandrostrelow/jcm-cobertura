@@ -530,12 +530,18 @@ select:focus {
 
 .done-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  grid-template-columns: repeat(8, minmax(118px, 1fr));
   gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .icon-action {
   min-height: 46px;
+}
+
+.icon-action span {
+  white-space: nowrap;
 }
 
 .icon-action.done {
@@ -568,8 +574,7 @@ select:focus {
 @media (max-width: 1080px) {
   .picker,
   .match-top,
-  .link-grid,
-  .done-grid {
+  .link-grid {
     grid-template-columns: 1fr;
   }
 
