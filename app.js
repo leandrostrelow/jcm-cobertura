@@ -596,7 +596,7 @@ function showToast(message) {
 
 function storyLabel(type) {
   if (type === "photos") return "FOTOS DISPONÍVEIS";
-  return type === "result" ? "RESULTADO FINAL" : "INÍCIO DO JOGO";
+  return type === "result" ? "PLACAR DO JOGO" : "INÍCIO DO JOGO";
 }
 
 function storyFileName(item, type) {
@@ -668,6 +668,28 @@ function drawStoryText(ctx, text, y, size, maxWidth) {
   ctx.shadowOffsetY = 0;
 }
 
+function modalityParts(item) {
+  const text = normalizeText(item.modality).trim();
+  const match = text.match(/^(.+?)\s+(Masculino|Feminino)$/i);
+  if (!match) return [text.toUpperCase()];
+  return [match[1].toUpperCase(), match[2].toUpperCase()];
+}
+
+function drawStoryModality(ctx, item, y, size, lineGap = 66) {
+  const lines = modalityParts(item);
+  if (lines.length === 1) {
+    drawStoryText(ctx, lines[0], y, size, 900);
+    return;
+  }
+  drawStoryText(ctx, lines[0], y, size, 860);
+  drawStoryText(ctx, lines[1], y + lineGap, size, 860);
+}
+
+function drawStoryModalitySmall(ctx, item, y) {
+  const text = modalityParts(item).join(" ");
+  drawStoryText(ctx, `(${text})`, y, 42, 820);
+}
+
 function drawLogoFallback(ctx, label, centerX, centerY, size) {
   ctx.save();
   ctx.beginPath();
@@ -709,8 +731,9 @@ async function copyText(text, successMessage) {
   }
 }
 
-function drawScoreNumber(ctx, value, centerX, centerY) {
+function drawScoreNumber(ctx, value, centerX, centerY, opacity = 1) {
   ctx.save();
+  ctx.globalAlpha = opacity;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#ffffff";
@@ -740,8 +763,8 @@ function loserOpacity(data, side) {
   const scoreA = Number(data.scoreA);
   const scoreB = Number(data.scoreB);
   if (Number.isNaN(scoreA) || Number.isNaN(scoreB) || scoreA === scoreB) return 1;
-  if (side === "A" && scoreA < scoreB) return 0.42;
-  if (side === "B" && scoreB < scoreA) return 0.42;
+  if (side === "A" && scoreA < scoreB) return 0.38;
+  if (side === "B" && scoreB < scoreA) return 0.38;
   return 1;
 }
 
@@ -751,10 +774,6 @@ async function openStoryArt(type) {
 
   if (!item.teamA || !item.teamB) {
     showToast("Essa arte precisa de duas equipes na partida.");
-    return;
-  }
-  if (type === "photos" && !data.editedPhotosUrl.trim()) {
-    showToast("Preencha o link das fotos editadas antes de gerar a arte.");
     return;
   }
   if (type === "result" && !hasCompleteScore(data)) {
@@ -770,11 +789,10 @@ async function openStoryArt(type) {
     blob: null,
     fileName: storyFileName(item, type),
     title: `${storyLabel(type)} - ${item.modality}`,
-    linkToCopy: type === "photos" ? data.editedPhotosUrl.trim() : ""
+    linkToCopy: ""
   };
 
   await drawStory(type, item, data);
-  if (type === "photos") await copyText(data.editedPhotosUrl, "Link das fotos copiado.");
   if (window.lucide) lucide.createIcons();
 }
 
@@ -794,12 +812,12 @@ async function drawStory(type, item, data) {
 
   const isResult = type === "result";
   const isPhotos = type === "photos";
-  drawStoryText(ctx, storyLabel(type), isResult ? 520 : isPhotos ? 535 : 555, 72, 900);
+  drawStoryText(ctx, storyLabel(type), isResult ? 505 : isPhotos ? 520 : 525, isResult ? 70 : 74, 930);
 
-  const logoSize = isResult ? 292 : isPhotos ? 285 : 330;
-  const logoY = isResult ? 785 : isPhotos ? 810 : 850;
-  const logoAX = 320;
-  const logoBX = 760;
+  const logoSize = isResult ? 335 : isPhotos ? 360 : 370;
+  const logoY = isResult ? 770 : isPhotos ? 810 : 805;
+  const logoAX = 315;
+  const logoBX = 765;
   const logoA = TEAM_LOGOS[item.teamA];
   const logoB = TEAM_LOGOS[item.teamB];
 
@@ -807,20 +825,22 @@ async function drawStory(type, item, data) {
   ctx.shadowColor = "rgba(0,0,0,0.38)";
   ctx.shadowBlur = 18;
   ctx.shadowOffsetY = 10;
+  const logoAOpacity = isResult ? loserOpacity(data, "A") : 1;
+  const logoBOpacity = isResult ? loserOpacity(data, "B") : 1;
 
   try {
-    ctx.globalAlpha = loserOpacity(data, "A");
+    ctx.globalAlpha = logoAOpacity;
     drawContainedImage(ctx, await loadImage(logoA), logoAX, logoY, logoSize, logoSize);
   } catch {
-    ctx.globalAlpha = loserOpacity(data, "A");
+    ctx.globalAlpha = logoAOpacity;
     drawLogoFallback(ctx, item.teamA, logoAX, logoY, logoSize);
   }
 
   try {
-    ctx.globalAlpha = loserOpacity(data, "B");
+    ctx.globalAlpha = logoBOpacity;
     drawContainedImage(ctx, await loadImage(logoB), logoBX, logoY, logoSize, logoSize);
   } catch {
-    ctx.globalAlpha = loserOpacity(data, "B");
+    ctx.globalAlpha = logoBOpacity;
     drawLogoFallback(ctx, item.teamB, logoBX, logoY, logoSize);
   }
   ctx.globalAlpha = 1;
@@ -829,13 +849,13 @@ async function drawStory(type, item, data) {
   drawVersusStory(ctx, logoY);
 
   if (isResult) {
-    drawScoreNumber(ctx, data.scoreA, logoAX, 1110);
-    drawScoreNumber(ctx, data.scoreB, logoBX, 1110);
+    drawScoreNumber(ctx, data.scoreA, logoAX, 1078, loserOpacity(data, "A"));
+    drawScoreNumber(ctx, data.scoreB, logoBX, 1078, loserOpacity(data, "B"));
+    drawStoryModalitySmall(ctx, item, 1220);
   } else if (isPhotos) {
-    drawStoryText(ctx, "LINK COPIADO", 1115, 48, 820);
-    drawStoryText(ctx, item.modality.toUpperCase(), 1270, 62, 900);
+    drawStoryModality(ctx, item, 1210, 64, 66);
   } else {
-    drawStoryText(ctx, item.modality.toUpperCase(), 1265, 72, 940);
+    drawStoryModality(ctx, item, 1200, 72, 74);
   }
 
   currentStory.blob = await canvasToBlob(canvas);
