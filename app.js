@@ -339,13 +339,26 @@ function render() {
 
   els.matchCard.innerHTML = `
     <div class="match-top">
-      <div class="time-cluster">
-        <div class="date-row">
-          <span class="pill day">${escapeHtml(item.weekday)}</span>
-          <span class="pill date">${escapeHtml(shortDate(item.date))}</span>
+      <div class="match-meta">
+        <div class="meta-row">
+          <div class="time-card">
+            <div class="match-date-line">${escapeHtml(`${item.weekday} ${shortDate(item.date)}`)}</div>
+            <span class="time">${escapeHtml(item.time)}</span>
+            <span class="pill venue">${escapeHtml(item.venue)}</span>
+          </div>
+
+          <div class="progress-box">
+            <h2>Checklist da partida</h2>
+            <div class="progress-track"><div class="progress-fill" style="width:${prog.percent}%"></div></div>
+            <p>${prog.done} de ${prog.total} ações feitas</p>
+            <div class="coverage-time">
+              <span>Início: ${escapeHtml(formatTimestamp(data.startedAt))}</span>
+              <span>Fim: ${escapeHtml(formatTimestamp(data.endedAt))}</span>
+              <strong>Tempo: ${escapeHtml(data.coverageDuration || "-")}</strong>
+            </div>
+          </div>
         </div>
-        <span class="time">${escapeHtml(item.time)}</span>
-        <span class="pill venue">${escapeHtml(item.venue)}</span>
+
         <div class="play-line">
           <button class="play-button ${data.started && !coverageEnded ? "active" : ""} ${coverageEnded ? "ended" : ""}" type="button" data-toggle="started">
             <i data-lucide="${coverageEnded ? "square" : data.started ? "radio" : "play"}"></i>
@@ -358,22 +371,9 @@ function render() {
       <div class="scoreboard">
         <div class="match-tags">
           <span class="pill modality">${escapeHtml(item.modality)}</span>
-        </div>
-        ${renderScore(item, data)}
-        <div class="phase-line">
           <span class="pill phase">${escapeHtml(item.phase)}</span>
         </div>
-      </div>
-
-      <div class="progress-box">
-        <h2>Checklist da partida</h2>
-        <div class="progress-track"><div class="progress-fill" style="width:${prog.percent}%"></div></div>
-        <p>${prog.done} de ${prog.total} ações feitas</p>
-        <div class="coverage-time">
-          <span>Início: ${escapeHtml(formatTimestamp(data.startedAt))}</span>
-          <span>Fim: ${escapeHtml(formatTimestamp(data.endedAt))}</span>
-          <strong>Tempo: ${escapeHtml(data.coverageDuration || "-")}</strong>
-        </div>
+        ${renderScore(item, data)}
       </div>
     </div>
 

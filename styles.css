@@ -209,24 +209,42 @@ select:focus {
 
 .match-top {
   display: grid;
-  grid-template-columns: minmax(210px, 0.68fr) minmax(560px, 1.55fr) minmax(250px, 0.72fr);
-  gap: clamp(16px, 2.5vw, 34px);
-  align-items: center;
-  padding: 22px clamp(16px, 3vw, 34px) 20px;
+  grid-template-columns: minmax(430px, 0.9fr) minmax(620px, 1.5fr);
+  gap: clamp(28px, 4vw, 56px);
+  align-items: start;
+  padding: 20px clamp(16px, 3vw, 34px) 22px;
   border-bottom: 1px solid var(--line);
 }
 
-.time-cluster {
+.match-meta {
   display: grid;
-  justify-items: start;
-  align-content: center;
-  gap: 10px;
+  gap: 22px;
 }
 
-.date-row {
-  display: flex;
-  flex-wrap: wrap;
+.meta-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.9fr) minmax(210px, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.time-card {
+  display: grid;
+  align-content: center;
   gap: 8px;
+  min-height: 158px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 18px 20px;
+}
+
+.match-date-line {
+  color: var(--ink);
+  font-size: 1.02rem;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .pill {
@@ -254,6 +272,11 @@ select:focus {
   color: var(--blue);
 }
 
+.time-card .venue {
+  background: #f2f2f2;
+  color: var(--muted);
+}
+
 .pill.phase {
   background: #f2f2f2;
 }
@@ -261,8 +284,8 @@ select:focus {
 .time {
   display: inline-flex;
   align-items: center;
-  min-height: 52px;
-  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  min-height: 56px;
+  font-size: clamp(2.85rem, 5.4vw, 4.15rem);
   font-weight: 950;
   line-height: 1;
 }
@@ -270,9 +293,9 @@ select:focus {
 .play-line {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  margin-top: 30px;
+  padding-left: 8px;
 }
 
 .play-button {
@@ -315,7 +338,9 @@ select:focus {
 .scoreboard {
   display: grid;
   align-items: center;
-  gap: 14px;
+  align-self: center;
+  gap: 26px;
+  padding-top: 10px;
 }
 
 .match-tags {
@@ -325,17 +350,11 @@ select:focus {
   gap: 10px;
 }
 
-.phase-line {
-  display: flex;
-  justify-content: center;
-  margin-top: -2px;
-}
-
 .score-line {
   display: grid;
-  grid-template-columns: minmax(170px, 1fr) 88px 34px 88px minmax(170px, 1fr);
+  grid-template-columns: minmax(180px, 1fr) 96px 42px 96px minmax(180px, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .team {
@@ -343,7 +362,7 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: clamp(1.25rem, 2.3vw, 1.9rem);
+  font-size: clamp(1.45rem, 2.55vw, 2.2rem);
   font-weight: 950;
   line-height: 1.05;
   overflow-wrap: anywhere;
@@ -359,8 +378,8 @@ select:focus {
 }
 
 .team-logo {
-  width: clamp(66px, 6.4vw, 92px);
-  height: clamp(66px, 6.4vw, 92px);
+  width: clamp(74px, 7vw, 104px);
+  height: clamp(74px, 7vw, 104px);
   flex: 0 0 auto;
   border-radius: 0;
   object-fit: contain;
@@ -370,17 +389,17 @@ select:focus {
 }
 
 .score-input {
-  height: 88px;
+  height: 96px;
   padding: 0;
   text-align: center;
-  font-size: 2.15rem;
+  font-size: 2.25rem;
   font-weight: 950;
 }
 
 .versus {
   text-align: center;
   color: var(--blue);
-  font-size: 2rem;
+  font-size: 2.4rem;
   font-weight: 950;
 }
 
@@ -391,11 +410,11 @@ select:focus {
 }
 
 .progress-box {
-  justify-self: end;
-  width: min(280px, 100%);
+  width: 100%;
+  min-height: 158px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 14px;
+  padding: 18px 20px;
   background: #fafafa;
 }
 
@@ -591,6 +610,10 @@ select:focus {
     grid-template-columns: 1fr;
   }
 
+  .scoreboard {
+    padding-top: 0;
+  }
+
   .progress-box {
     justify-self: stretch;
   }
@@ -610,8 +633,17 @@ select:focus {
     padding-top: 20px;
   }
 
+  .meta-row {
+    grid-template-columns: 1fr;
+  }
+
+  .time-card,
+  .progress-box {
+    min-height: 0;
+  }
+
   .play-line {
-    margin-top: 12px;
+    padding-left: 0;
   }
 
   .score-line {
@@ -648,7 +680,7 @@ select:focus {
 }
 
 @media (max-width: 480px) {
-  .time-cluster,
+  .match-meta,
   .play-line,
   .match-tags {
     gap: 7px;
