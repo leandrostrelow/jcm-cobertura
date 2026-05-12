@@ -285,6 +285,16 @@ function formatTimestamp(value) {
   });
 }
 
+function formatTimeOnly(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
 function formatDuration(startIso, endIso) {
   if (!startIso || !endIso) return "";
   const start = new Date(startIso).getTime();
@@ -349,11 +359,11 @@ function render() {
           <div class="coverage-summary">
             <div class="coverage-row">
               <span>Início</span>
-              <strong>${escapeHtml(formatTimestamp(data.startedAt))}</strong>
+              <strong>${escapeHtml(formatTimeOnly(data.startedAt))}</strong>
             </div>
             <div class="coverage-row">
               <span>Fim</span>
-              <strong>${escapeHtml(formatTimestamp(data.endedAt))}</strong>
+              <strong>${escapeHtml(formatTimeOnly(data.endedAt))}</strong>
             </div>
             <div class="coverage-row">
               <span>Tempo</span>
