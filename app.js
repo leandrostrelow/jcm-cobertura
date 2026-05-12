@@ -435,9 +435,18 @@ function renderTeam(name, side) {
   const img = logo
     ? `<img class="team-logo" src="${escapeHtml(logo)}" alt="" onerror="this.remove()">`
     : "";
-  const label = `<span>${escapeHtml(name)}</span>`;
+  const label = `<span>${formatTeamName(name)}</span>`;
   const content = side === "left" ? `${label}${img}` : `${img}${label}`;
   return `<div class="team ${side}">${content}</div>`;
+}
+
+function formatTeamName(name) {
+  const normalized = normalizeText(name);
+  const parts = normalized.match(/^Multivix\s+(.+)$/i);
+  if (parts) {
+    return `Multivix<br>${escapeHtml(parts[1])}`;
+  }
+  return escapeHtml(normalized);
 }
 
 function renderPhotographer(person, index) {
