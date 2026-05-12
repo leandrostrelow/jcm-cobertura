@@ -490,8 +490,14 @@ function formatTeamName(name) {
 
 function renderPhotographer(person, index) {
   const n = index + 1;
+  const removeButton = index >= 2
+    ? `<button class="remove-photo" type="button" data-remove-photographer="${index}" title="Remover fotógrafo">
+        <i data-lucide="x"></i>
+      </button>`
+    : "";
   return `
     <div class="photographer-card" data-photographer="${index}">
+      ${removeButton}
       <label>
         <span>Fotógrafo ${n}</span>
         <input value="${escapeHtml(person.name)}" placeholder="Nome" data-photo-index="${index}" data-photo-field="name">
@@ -1060,6 +1066,7 @@ function bindEvents() {
     const item = getCurrentItem();
     const data = record(item.id);
     const add = event.target.closest("[data-add-photographer]");
+    const remove = event.target.closest("[data-remove-photographer]");
     const toggle = event.target.closest("[data-toggle]");
     const art = event.target.closest("[data-art-type]");
     if (art) {
@@ -1071,6 +1078,16 @@ function bindEvents() {
       saveState();
       queueSave(item.id, true);
       render();
+      return;
+    }
+    if (remove) {
+      const index = Number(remove.dataset.removePhotographer);
+      if (index >= 2) {
+        data.photographers.splice(index, 1);
+        saveState();
+        queueSave(item.id, true);
+        render();
+      }
       return;
     }
     if (toggle) {
