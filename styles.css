@@ -231,17 +231,19 @@ select:focus {
 .time-card {
   display: grid;
   align-content: center;
+  justify-items: center;
   gap: 8px;
-  min-height: 158px;
+  min-height: 152px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  padding: 18px 20px;
+  padding: 18px 18px;
+  text-align: center;
 }
 
 .match-date-line {
   color: var(--ink);
-  font-size: 1.02rem;
+  font-size: 0.96rem;
   font-weight: 950;
   line-height: 1;
   text-transform: uppercase;
@@ -284,8 +286,9 @@ select:focus {
 .time {
   display: inline-flex;
   align-items: center;
-  min-height: 56px;
-  font-size: clamp(2.85rem, 5.4vw, 4.15rem);
+  justify-content: center;
+  min-height: 52px;
+  font-size: clamp(2.55rem, 4.8vw, 3.7rem);
   font-weight: 950;
   line-height: 1;
 }
@@ -352,20 +355,24 @@ select:focus {
 
 .score-line {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 96px 42px 96px minmax(180px, 1fr);
+  grid-template-columns: minmax(220px, 1fr) 86px 36px 86px minmax(220px, 1fr);
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .team {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: clamp(1.45rem, 2.55vw, 2.2rem);
+  gap: 10px;
+  font-size: clamp(1.12rem, 1.8vw, 1.6rem);
   font-weight: 950;
   line-height: 1.05;
-  overflow-wrap: anywhere;
+}
+
+.team span {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .team.left {
@@ -378,8 +385,8 @@ select:focus {
 }
 
 .team-logo {
-  width: clamp(74px, 7vw, 104px);
-  height: clamp(74px, 7vw, 104px);
+  width: clamp(68px, 5.8vw, 88px);
+  height: clamp(68px, 5.8vw, 88px);
   flex: 0 0 auto;
   border-radius: 0;
   object-fit: contain;
@@ -389,17 +396,17 @@ select:focus {
 }
 
 .score-input {
-  height: 96px;
+  height: 86px;
   padding: 0;
   text-align: center;
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 950;
 }
 
 .versus {
   text-align: center;
   color: var(--blue);
-  font-size: 2.4rem;
+  font-size: 2.1rem;
   font-weight: 950;
 }
 
@@ -654,6 +661,12 @@ select:focus {
   .team {
     gap: 6px;
     font-size: 0.95rem;
+  }
+
+  .team span {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .team-logo {
