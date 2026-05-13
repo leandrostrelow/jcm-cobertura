@@ -24,6 +24,17 @@
     </header>
 
     <main class="app-shell">
+      <section class="view-tabs" aria-label="Alternar painel">
+        <button class="view-tab active" type="button" data-view="coverage">
+          <i data-lucide="clipboard-list"></i>
+          <span>Cobertura</span>
+        </button>
+        <button class="view-tab" type="button" data-view="brackets">
+          <i data-lucide="git-branch"></i>
+          <span>Chaveamento</span>
+        </button>
+      </section>
+
       <section class="picker" aria-label="Selecionar partida">
         <label>
           <span>Data</span>
@@ -66,6 +77,21 @@
       </section>
 
       <section id="matchCard" class="match-card" aria-live="polite"></section>
+
+      <section id="bracketsView" class="view-panel" hidden>
+        <section class="bracket-toolbar" aria-label="Filtrar chaveamento">
+          <div>
+            <p>Mapa dos mata-matas</p>
+            <h2>Chaveamento automatico</h2>
+          </div>
+          <label>
+            <span>Modalidade</span>
+            <select id="bracketFilter"></select>
+          </label>
+        </section>
+
+        <section id="bracketsBoard" class="brackets-board" aria-live="polite"></section>
+      </section>
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>

@@ -1,7 +1,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzF1MGAmojETsvqyoxybuBjDN3FRh4ivw785S1B9omphFuQ5Uuq8nrxla8SgHDedundxg/exec";
 const storageKey = "jcm-simple-coverage-v2";
 const notificationKey = "jcm-simple-notifications-v1";
-const notificationSoundFile = "notification.mp3";
+const notificationSoundFile = "assets/notification.mp3";
 const remotePollIntervalMs = 12000;
 const localSchedule = window.JCM_SCHEDULE || [];
 const STORY_BACKGROUNDS = {
@@ -13,18 +13,45 @@ const STORY_BACKGROUNDS = {
 const STORY_WIDTH = 1080;
 const STORY_HEIGHT = 1920;
 const TEAM_LOGOS = {
-  "Multivix Vitória": "multivix-vitoria.png",
-  "Multivix Cachoeiro": "multivix-cachoeiro.png",
-  "UFES": "ufes.png",
-  "EMESCAM": "emescam.png",
-  "UVV": "uvv.png",
-  "UNESC": "unesc.png"
+  "Multivix Vitória": "assets/logos/multivix-vitoria.png",
+  "Multivix Cachoeiro": "assets/logos/multivix-cachoeiro.png",
+  "UFES": "assets/logos/ufes.png",
+  "EMESCAM": "assets/logos/emescam.png",
+  "UVV": "assets/logos/uvv.png",
+  "UNESC": "assets/logos/unesc.png"
 };
+const BRACKET_DEFINITIONS = [
+  { id: "futsal-masculino", title: "Futsal Masculino", qf1: "JCM-013", qf2: "JCM-001", sf1: "JCM-018", sf2: "JCM-020", final: "JCM-053" },
+  { id: "futsal-feminino", title: "Futsal Feminino", qf1: "JCM-002", qf2: "JCM-012", sf1: "JCM-021", sf2: "JCM-019", final: "JCM-051" },
+  { id: "handebol-masculino", title: "Handebol Masculino", qf1: "JCM-006", qf2: "JCM-004", sf1: "JCM-029", sf2: "JCM-031", final: "JCM-049" },
+  { id: "handebol-feminino", title: "Handebol Feminino", qf1: "JCM-009", qf2: "JCM-005", sf1: "JCM-032", sf2: "JCM-030", final: "JCM-047" },
+  { id: "basquete-masculino", title: "Basquete Masculino", qf1: "JCM-017", qf2: "JCM-027", sf1: "JCM-034", sf2: "JCM-035", final: "JCM-045" },
+  { id: "basquete-feminino", title: "Basquete Feminino", qf1: "JCM-016", qf2: "", sf1: "JCM-033", sf2: "JCM-026", final: "JCM-043" },
+  { id: "futebol-masculino", title: "Futebol de Campo", qf1: "JCM-015", qf2: "JCM-014", sf1: "JCM-037", sf2: "JCM-036", final: "JCM-038" },
+  { id: "volei-masculino", title: "Volei Masculino", qf1: "JCM-011", qf2: "JCM-010", sf1: "JCM-023", sf2: "JCM-022", final: "JCM-041" },
+  { id: "volei-feminino", title: "Volei Feminino", qf1: "JCM-007", qf2: "JCM-008", sf1: "JCM-024", sf2: "JCM-025", final: "JCM-039" }
+];
+const GAME_DEPENDENCIES = BRACKET_DEFINITIONS.reduce((dependencies, bracket) => {
+  if (bracket.qf1 && bracket.sf1) {
+    dependencies[bracket.sf1] = { ...dependencies[bracket.sf1], teamB: bracket.qf1 };
+  }
+  if (bracket.qf2 && bracket.sf2) {
+    dependencies[bracket.sf2] = { ...dependencies[bracket.sf2], teamB: bracket.qf2 };
+  }
+  if (bracket.sf1 && bracket.final) {
+    dependencies[bracket.final] = { ...dependencies[bracket.final], teamA: bracket.sf1 };
+  }
+  if (bracket.sf2 && bracket.final) {
+    dependencies[bracket.final] = { ...dependencies[bracket.final], teamB: bracket.sf2 };
+  }
+  return dependencies;
+}, {});
 
 let schedule = [...localSchedule];
 let state = readState();
 let notifications = readNotifications();
 let selectedId = schedule[0]?.id;
+let activeView = "coverage";
 let remoteReady = false;
 let remotePollTimer = null;
 let savingRemote = false;
@@ -34,6 +61,11 @@ let notificationAudioContext = null;
 const saveTimers = {};
 
 const els = {
+  viewTabs: document.querySelector(".view-tabs"),
+  coveragePanels: document.querySelectorAll(".picker, #notificationCenter, #matchCard"),
+  bracketsView: document.querySelector("#bracketsView"),
+  bracketsBoard: document.querySelector("#bracketsBoard"),
+  bracketFilter: document.querySelector("#bracketFilter"),
   dateFilter: document.querySelector("#dateFilter"),
   gamePicker: document.querySelector("#gamePicker"),
   prevGame: document.querySelector("#prevGame"),
@@ -350,12 +382,42 @@ function getVisibleGames() {
   return schedule.filter((item) => date === "all" || item.date === date);
 }
 
+function getItemById(id) {
+  return schedule.find((item) => item.id === id) || localSchedule.find((item) => item.id === id);
+}
+
 function getCurrentItem() {
-  return schedule.find((item) => item.id === selectedId) || schedule[0];
+  return resolveItemTeams(getItemById(selectedId) || schedule[0]);
+}
+
+function scoreNumber(value) {
+  const number = Number(String(value ?? "").replace(",", "."));
+  return Number.isFinite(number) ? number : NaN;
+}
+
+function winnerForMatch(id) {
+  const item = resolveItemTeams(getItemById(id));
+  if (!item) return "";
+  const data = record(id);
+  const scoreA = scoreNumber(data.scoreA);
+  const scoreB = scoreNumber(data.scoreB);
+  if (Number.isNaN(scoreA) || Number.isNaN(scoreB) || scoreA === scoreB) return "";
+  return scoreA > scoreB ? item.teamA : item.teamB;
+}
+
+function resolveItemTeams(item) {
+  if (!item) return item;
+  const dependency = GAME_DEPENDENCIES[item.id];
+  if (!dependency) return item;
+  return {
+    ...item,
+    teamA: dependency.teamA ? (winnerForMatch(dependency.teamA) || item.teamA) : item.teamA,
+    teamB: dependency.teamB ? (winnerForMatch(dependency.teamB) || item.teamB) : item.teamB
+  };
 }
 
 function hasCompleteScore(data) {
-  return data.scoreA.trim() !== "" && data.scoreB.trim() !== "";
+  return normalizeText(data.scoreA).trim() !== "" && normalizeText(data.scoreB).trim() !== "";
 }
 
 function statusForRecord(data) {
@@ -467,7 +529,7 @@ function populateGamePicker() {
   if (!visible.some((item) => item.id === selectedId)) selectedId = visible[0]?.id || schedule[0]?.id;
   els.gamePicker.innerHTML = visible.map((item) => {
     const done = isFinalized(item) ? "OK - " : "";
-    return `<option value="${escapeHtml(item.id)}">${done}${escapeHtml(optionLabel(item))}</option>`;
+    return `<option value="${escapeHtml(item.id)}">${done}${escapeHtml(optionLabel(resolveItemTeams(item)))}</option>`;
   }).join("");
   els.gamePicker.value = selectedId;
 }
@@ -569,6 +631,7 @@ function render() {
     </div>
   `;
 
+  renderBrackets();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -758,6 +821,143 @@ function renderNotifications() {
         <span>Aguardando avisos da equipe em campo.</span>
       </div>`;
   if (window.lucide) lucide.createIcons();
+}
+
+function switchView(view) {
+  activeView = view === "brackets" ? "brackets" : "coverage";
+  els.coveragePanels.forEach((panel) => {
+    panel.hidden = activeView !== "coverage";
+  });
+  if (els.bracketsView) els.bracketsView.hidden = activeView !== "brackets";
+  document.querySelectorAll(".view-tab").forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === activeView);
+  });
+  if (activeView === "brackets") renderBrackets();
+  if (window.lucide) lucide.createIcons();
+}
+
+function initBracketFilter() {
+  if (!els.bracketFilter) return;
+  const current = els.bracketFilter.value || "all";
+  els.bracketFilter.innerHTML = [
+    `<option value="all">Todos os chaveamentos</option>`,
+    ...BRACKET_DEFINITIONS.map((bracket) => `<option value="${escapeHtml(bracket.id)}">${escapeHtml(bracket.title)}</option>`)
+  ].join("");
+  els.bracketFilter.value = current === "all" || BRACKET_DEFINITIONS.some((bracket) => bracket.id === current)
+    ? current
+    : "all";
+}
+
+function renderBrackets() {
+  if (!els.bracketsBoard) return;
+  initBracketFilter();
+  const filter = els.bracketFilter?.value || "all";
+  const brackets = filter === "all"
+    ? BRACKET_DEFINITIONS
+    : BRACKET_DEFINITIONS.filter((bracket) => bracket.id === filter);
+  els.bracketsBoard.innerHTML = brackets.map(renderBracketCard).join("");
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderBracketCard(bracket) {
+  const qfIds = [bracket.qf1, bracket.qf2].filter(Boolean);
+  const semiIds = [bracket.sf1, bracket.sf2].filter(Boolean);
+  return `
+    <article class="bracket-card">
+      <header class="bracket-card-head">
+        <div>
+          <p>Chaveamento</p>
+          <h2>${escapeHtml(bracket.title)}</h2>
+        </div>
+        <span>${escapeHtml(bracketSummary(bracket))}</span>
+      </header>
+      <div class="bracket-columns">
+        <div class="bracket-column">
+          <h3>Quartas</h3>
+          ${qfIds.length ? qfIds.map(renderBracketMatch).join("") : renderBracketEmpty("Sem quartas cadastradas")}
+        </div>
+        <div class="bracket-column">
+          <h3>Semifinais</h3>
+          ${semiIds.map(renderBracketMatch).join("")}
+        </div>
+        <div class="bracket-column">
+          <h3>Final</h3>
+          ${renderBracketMatch(bracket.final)}
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function bracketSummary(bracket) {
+  const ids = [bracket.qf1, bracket.qf2, bracket.sf1, bracket.sf2, bracket.final].filter(Boolean);
+  const done = ids.filter((id) => winnerForMatch(id)).length;
+  return `${done} de ${ids.length} definidos`;
+}
+
+function renderBracketEmpty(text) {
+  return `<div class="bracket-empty">${escapeHtml(text)}</div>`;
+}
+
+function renderBracketMatch(id) {
+  const item = resolveItemTeams(getItemById(id));
+  if (!item) return renderBracketEmpty("Jogo nao encontrado");
+  const data = record(item.id);
+  const winner = winnerForMatch(item.id);
+  const scoreReady = hasCompleteScore(data);
+  return `
+    <article class="bracket-match ${winner ? "has-winner" : ""}">
+      <header>
+        <span>${escapeHtml(`${shortDate(item.date)} ${item.time}`)}</span>
+        <strong>${escapeHtml(item.phase)}</strong>
+      </header>
+      <div class="bracket-teams">
+        ${renderBracketTeam(item.teamA, data.scoreA, scoreReady && winner === item.teamA)}
+        ${renderBracketTeam(item.teamB, data.scoreB, scoreReady && winner === item.teamB)}
+      </div>
+      <footer>
+        <span>${winner ? `Vencedor: ${escapeHtml(formatWinnerName(winner))}` : escapeHtml(statusForRecord(data))}</span>
+        <button class="secondary-button slim" type="button" data-open-bracket-game="${escapeHtml(item.id)}">
+          <i data-lucide="external-link"></i>
+          <span>Abrir</span>
+        </button>
+      </footer>
+    </article>
+  `;
+}
+
+function renderBracketTeam(name, score, isWinner) {
+  const normalized = normalizeText(name);
+  const logo = TEAM_LOGOS[normalized];
+  const waiting = /^Vencedor/i.test(normalized);
+  const classes = ["bracket-team", isWinner ? "winner" : "", waiting ? "waiting" : ""].filter(Boolean).join(" ");
+  const safeScore = normalizeText(score);
+  return `
+    <div class="${classes}">
+      ${logo ? `<img class="bracket-team-logo" src="${escapeHtml(logo)}" alt="" onerror="this.remove()">` : `<span class="bracket-team-logo fallback">${escapeHtml(teamInitials(normalized))}</span>`}
+      <strong>${formatTeamName(normalized)}</strong>
+      <span class="bracket-score">${escapeHtml(safeScore || "-")}</span>
+    </div>
+  `;
+}
+
+function teamInitials(name) {
+  const normalized = normalizeText(name).trim();
+  if (!normalized) return "-";
+  if (/^Vencedor/i.test(normalized)) return "?";
+  return normalized.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+}
+
+function formatWinnerName(name) {
+  return normalizeText(name).replace(/\s+/g, " ");
+}
+
+function openBracketGame(id) {
+  if (!getItemById(id)) return;
+  selectedId = id;
+  switchView("coverage");
+  render();
+  els.matchCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderNotification(notification) {
@@ -1244,6 +1444,7 @@ async function loadRemoteData(options = {}) {
     if (!payload.ok) throw new Error(payload.error || "Erro ao carregar planilha");
 
     const nextSchedule = payload.rows.map(rowToItem).filter((item) => item.id);
+    if (!nextSchedule.length) throw new Error("Planilha sem jogos");
     const nextState = payload.rows.reduce((acc, row) => {
       if (row.ID) acc[row.ID] = rowToRecord(row);
       return acc;
@@ -1307,6 +1508,20 @@ function escapeHtml(value) {
 }
 
 function bindEvents() {
+  els.viewTabs?.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-view]");
+    if (!tab) return;
+    switchView(tab.dataset.view);
+  });
+
+  els.bracketFilter?.addEventListener("change", renderBrackets);
+
+  els.bracketsBoard?.addEventListener("click", (event) => {
+    const open = event.target.closest("[data-open-bracket-game]");
+    if (!open) return;
+    openBracketGame(open.dataset.openBracketGame);
+  });
+
   els.dateFilter.addEventListener("change", () => {
     render();
   });
@@ -1418,6 +1633,8 @@ function bindEvents() {
 
 bindEvents();
 initFilters();
+initBracketFilter();
+switchView(activeView);
 renderNotifications();
 render();
 loadRemoteData();
