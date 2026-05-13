@@ -1,7 +1,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzF1MGAmojETsvqyoxybuBjDN3FRh4ivw785S1B9omphFuQ5Uuq8nrxla8SgHDedundxg/exec";
 const storageKey = "jcm-simple-coverage-v2";
 const notificationKey = "jcm-simple-notifications-v1";
-const notificationSoundFile = "assets/notification.mp3";
+const notificationSoundFile = "notification.mp3";
 const remotePollIntervalMs = 12000;
 const localSchedule = window.JCM_SCHEDULE || [];
 const STORY_BACKGROUNDS = {
@@ -12,25 +12,13 @@ const STORY_BACKGROUNDS = {
 };
 const STORY_WIDTH = 1080;
 const STORY_HEIGHT = 1920;
-function logoPaths(fileName) {
-  return [`assets/logos/${fileName}`, fileName];
-}
-
 const TEAM_LOGOS = {
-  "Multivix Vitória": logoPaths("multivix-vitoria.png"),
-  "Multivix Cachoeiro": logoPaths("multivix-cachoeiro.png"),
-  "UFES": logoPaths("ufes.png"),
-  "EMESCAM": logoPaths("emescam.png"),
-  "UVV": logoPaths("uvv.png"),
-  "UNESC": logoPaths("unesc.png")
-};
-const TEAM_LOGO_FILES = {
-  "multivix-vitoria": "multivix-vitoria.png",
-  "multivix-cachoeiro": "multivix-cachoeiro.png",
-  "ufes": "ufes.png",
-  "emescam": "emescam.png",
-  "uvv": "uvv.png",
-  "unesc": "unesc.png"
+  "Multivix Vitória": "multivix-vitoria.png",
+  "Multivix Cachoeiro": "multivix-cachoeiro.png",
+  "UFES": "ufes.png",
+  "EMESCAM": "emescam.png",
+  "UVV": "uvv.png",
+  "UNESC": "unesc.png"
 };
 const BRACKET_DEFINITIONS = [
   { id: "futsal-masculino", title: "Futsal Masculino", qf1: "JCM-013", qf2: "JCM-001", sf1: "JCM-018", sf2: "JCM-020", final: "JCM-053" },
@@ -664,7 +652,7 @@ function renderScore(item, data) {
 
 function renderTeam(name, side) {
   const logo = teamLogoCandidates(name);
-  const img = logo.length
+  const img = logo
     ? `<img ${imageAttributes("team-logo", logo)}>`
     : "";
   const label = `<span>${formatTeamName(name)}</span>`;
@@ -683,38 +671,12 @@ function formatTeamName(name) {
 
 function teamLogoCandidates(name) {
   const normalized = normalizeText(name);
-  const exact = TEAM_LOGOS[normalized];
-  if (exact) return Array.isArray(exact) ? exact : [exact];
-  const fileName = TEAM_LOGO_FILES[slugify(normalized)];
-  return fileName ? logoPaths(fileName) : [];
+  return TEAM_LOGOS[normalized] || "";
 }
 
-function imageAttributes(className, candidates) {
-  const sources = (Array.isArray(candidates) ? candidates : [candidates]).filter(Boolean);
-  const fallbackSources = sources.slice(1);
-  const fallbackAttr = fallbackSources.length
-    ? ` data-fallback-srcs="${escapeHtml(JSON.stringify(fallbackSources))}"`
-    : "";
-  return `class="${escapeHtml(className)}" src="${escapeHtml(sources[0])}" alt=""${fallbackAttr} onerror="handleImageError(this)"`;
+function imageAttributes(className, src) {
+  return `class="${escapeHtml(className)}" src="${escapeHtml(src)}" alt="" onerror="this.remove()"`;
 }
-
-function handleImageError(image) {
-  let fallbacks = [];
-  try {
-    fallbacks = JSON.parse(image.dataset.fallbackSrcs || "[]");
-  } catch {
-    fallbacks = [];
-  }
-  const next = fallbacks.shift();
-  if (next) {
-    image.dataset.fallbackSrcs = JSON.stringify(fallbacks);
-    image.src = next;
-    return;
-  }
-  image.remove();
-}
-
-window.handleImageError = handleImageError;
 
 function renderPhotographer(person, index) {
   const n = index + 1;
@@ -981,7 +943,7 @@ function renderBracketTeam(name, score, isWinner) {
   const safeScore = normalizeText(score);
   return `
     <div class="${classes}">
-      ${logo.length ? `<img ${imageAttributes("bracket-team-logo", logo)}>` : `<span class="bracket-team-logo fallback">${escapeHtml(teamInitials(normalized))}</span>`}
+      ${logo ? `<img ${imageAttributes("bracket-team-logo", logo)}>` : `<span class="bracket-team-logo fallback">${escapeHtml(teamInitials(normalized))}</span>`}
       <strong>${formatTeamName(normalized)}</strong>
       <span class="bracket-score">${escapeHtml(safeScore || "-")}</span>
     </div>
