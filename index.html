@@ -10,17 +10,25 @@
   <body>
     <header class="topbar">
       <div class="brand">
-        <div class="brand-mark">JCM</div>
+        <div class="brand-mark">
+          <span>JCM</span>
+          <img src="jcm-logo.png" alt="JCM" onload="this.previousElementSibling.hidden = true" onerror="this.remove()">
+        </div>
         <div>
           <p>Central de cobertura</p>
           <h1>Jogos Capixaba de Medicina</h1>
         </div>
       </div>
-      <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1bCQtDZ-3QunThSAsmB2Tn3WIqjYycgneT0B8PhxnE78/edit" target="_blank" rel="noreferrer">
-        <i data-lucide="table-2"></i>
-        <span>Planilha base</span>
-      </a>
-      <div id="syncStatus" class="sync-status">Conectando...</div>
+      <div class="topbar-actions">
+        <div class="lotus-mark" aria-label="Lotus Formaturas">
+          <img src="lotus-logo.png" alt="Lotus Formaturas" onerror="this.parentElement.remove()">
+        </div>
+        <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1bCQtDZ-3QunThSAsmB2Tn3WIqjYycgneT0B8PhxnE78/edit" target="_blank" rel="noreferrer">
+          <i data-lucide="table-2"></i>
+          <span>Planilha base</span>
+        </a>
+        <div id="syncStatus" class="sync-status">Conectando...</div>
+      </div>
     </header>
 
     <main class="app-shell">

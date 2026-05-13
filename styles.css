@@ -56,6 +56,14 @@ a {
   backdrop-filter: blur(14px);
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -64,6 +72,7 @@ a {
 }
 
 .brand-mark {
+  position: relative;
   display: grid;
   place-items: center;
   width: 50px;
@@ -73,6 +82,35 @@ a {
   background: var(--ink);
   color: #fff;
   font-weight: 900;
+  overflow: hidden;
+  padding: 6px;
+}
+
+.brand-mark img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.brand-mark span[hidden] {
+  display: none;
+}
+
+.lotus-mark {
+  display: grid;
+  place-items: center;
+  min-width: 130px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ink);
+  padding: 7px 12px;
+}
+
+.lotus-mark img {
+  max-width: 116px;
+  max-height: 28px;
+  object-fit: contain;
 }
 
 .brand p,
@@ -1201,7 +1239,18 @@ button:disabled {
     flex-direction: column;
   }
 
-  .sheet-link {
+  .topbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .sheet-link,
+  .sync-status {
+    width: 100%;
+  }
+
+  .lotus-mark {
     width: 100%;
   }
 
