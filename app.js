@@ -1432,15 +1432,14 @@ async function drawBracketStory(bracket) {
   ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
   ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
 
-  drawPositionedText(ctx, "CHAVEAMENTO ATUALIZADO", 74, 405, 38, 540, {
-    align: "left",
+  drawPositionedText(ctx, "CHAVEAMENTO ATUALIZADO", STORY_WIDTH / 2, 395, 30, 720, {
     color: "rgba(255,255,255,0.58)",
     weight: 850
   });
-  drawPositionedText(ctx, bracket.title.toUpperCase(), 74, 460, 54, 820, { align: "left" });
+  drawPositionedText(ctx, bracket.title.toUpperCase(), STORY_WIDTH / 2, 450, 46, 920);
 
-  await drawBracketBranch(ctx, bracket.qf1, bracket.sf1, 300, true);
-  await drawBracketBranch(ctx, bracket.qf2, bracket.sf2, 780, false);
+  await drawBracketBranch(ctx, bracket.qf1, bracket.sf1, 285);
+  await drawBracketBranch(ctx, bracket.qf2, bracket.sf2, 795);
   await drawBracketFinal(ctx, bracket.final);
 
   currentStory.blob = await canvasToBlob(canvas);
@@ -1460,33 +1459,33 @@ async function drawStoryBackground(ctx, candidates) {
   drawFallbackBackground(ctx);
 }
 
-async function drawBracketBranch(ctx, quarterId, semiId, centerX, isLeft) {
+async function drawBracketBranch(ctx, quarterId, semiId, centerX) {
   const topMatchId = quarterId || semiId;
-  const semiY = quarterId ? 1115 : 850;
+  const semiY = quarterId ? 1155 : 900;
   if (quarterId) {
-    drawPositionedText(ctx, "QUARTAS", centerX, 635, 38, 360);
-    await drawBracketStoryMatch(ctx, topMatchId, centerX, 765, 142);
-    drawBracketArrow(ctx, centerX, 895, 1030);
+    drawPositionedText(ctx, "QUARTAS", centerX, 620, 30, 340);
+    await drawBracketStoryMatch(ctx, topMatchId, centerX, 780, 220);
+    drawBracketArrow(ctx, centerX, 910, 1015);
   }
 
-  drawPositionedText(ctx, "SEMIFINAIS", centerX, semiY - 92, 38, 380);
-  await drawBracketStoryMatch(ctx, semiId, centerX, semiY + 45, 138, { highlightKnownOnly: true });
+  drawPositionedText(ctx, "SEMIFINAIS", centerX, semiY - 86, 30, 360);
+  await drawBracketStoryMatch(ctx, semiId, centerX, semiY + 50, 205, { highlightKnownOnly: true });
 }
 
 async function drawBracketFinal(ctx, finalId) {
-  drawPositionedText(ctx, "FINAL", STORY_WIDTH / 2, 1420, 38, 360);
-  await drawBracketStoryMatch(ctx, finalId, STORY_WIDTH / 2, 1538, 132, { compact: true, highlightKnownOnly: true });
+  drawPositionedText(ctx, "FINAL", STORY_WIDTH / 2, 1395, 31, 320);
+  await drawBracketStoryMatch(ctx, finalId, STORY_WIDTH / 2, 1510, 190, { compact: true, highlightKnownOnly: true });
 }
 
 async function drawBracketStoryMatch(ctx, id, centerX, centerY, logoSize, options = {}) {
   const item = resolveItemTeams(getItemById(id));
   if (!item) return;
-  const offset = options.compact ? 122 : 135;
+  const offset = options.compact ? 145 : 155;
   const xA = centerX - offset;
   const xB = centerX + offset;
   await drawBracketStoryLogo(ctx, item.teamA, xA, centerY, logoSize, options);
   await drawBracketStoryLogo(ctx, item.teamB, xB, centerY, logoSize, options);
-  drawPositionedText(ctx, "X", centerX, centerY, options.compact ? 42 : 48, 80);
+  drawPositionedText(ctx, "X", centerX, centerY, options.compact ? 38 : 42, 70);
 }
 
 async function drawBracketStoryLogo(ctx, teamName, x, y, size, options = {}) {
@@ -1509,29 +1508,31 @@ async function drawBracketStoryLogo(ctx, teamName, x, y, size, options = {}) {
   }
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
-  ctx.fillStyle = waiting ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.9)";
-  roundRect(ctx, x - size / 2, y - size / 2, size, size, 24);
+  ctx.fillStyle = waiting ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.9)";
+  roundRect(ctx, x - size / 2, y - size / 2, size, size, 22);
   ctx.fill();
   ctx.strokeStyle = "rgba(255,255,255,0.3)";
   ctx.lineWidth = 3;
   ctx.stroke();
   ctx.restore();
-  drawPositionedText(ctx, waiting ? "?" : normalizeText(teamName).toUpperCase(), x, y, waiting ? 56 : 32, size - 20);
+  drawPositionedText(ctx, waiting ? "?" : normalizeText(teamName).toUpperCase(), x, y, waiting ? 44 : 30, size - 20, {
+    color: waiting ? "rgba(255,255,255,0.72)" : "#151515"
+  });
 }
 
 function drawBracketArrow(ctx, x, y1, y2) {
   ctx.save();
-  ctx.strokeStyle = "rgba(255,255,255,0.88)";
-  ctx.lineWidth = 8;
+  ctx.strokeStyle = "rgba(255,255,255,0.42)";
+  ctx.lineWidth = 6;
   ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(x, y1);
   ctx.lineTo(x, y2);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(x - 36, y2 - 42);
+  ctx.moveTo(x - 32, y2 - 38);
   ctx.lineTo(x, y2);
-  ctx.lineTo(x + 36, y2 - 42);
+  ctx.lineTo(x + 32, y2 - 38);
   ctx.stroke();
   ctx.restore();
 }
