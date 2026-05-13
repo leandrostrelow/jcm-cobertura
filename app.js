@@ -1461,15 +1461,15 @@ async function drawStoryBackground(ctx, candidates) {
 
 async function drawBracketBranch(ctx, quarterId, semiId, centerX) {
   const topMatchId = quarterId || semiId;
-  const semiY = quarterId ? 1155 : 900;
+  const semiY = quarterId ? 1120 : 900;
   if (quarterId) {
     drawPositionedText(ctx, "QUARTAS", centerX, 620, 30, 340);
-    await drawBracketStoryMatch(ctx, topMatchId, centerX, 780, 220);
-    drawBracketArrow(ctx, centerX, 910, 1015);
+    await drawBracketStoryMatch(ctx, topMatchId, centerX, 770, 200);
+    drawBracketArrow(ctx, centerX, 890, 1010);
   }
 
-  drawPositionedText(ctx, "SEMIFINAIS", centerX, semiY - 86, 30, 360);
-  await drawBracketStoryMatch(ctx, semiId, centerX, semiY + 50, 205, { highlightKnownOnly: true });
+  drawPositionedText(ctx, "SEMIFINAIS", centerX, semiY - 76, 30, 360);
+  await drawBracketStoryMatch(ctx, semiId, centerX, semiY + 55, 200, { highlightKnownOnly: true });
 }
 
 async function drawBracketFinal(ctx, finalId) {
@@ -1480,20 +1480,22 @@ async function drawBracketFinal(ctx, finalId) {
 async function drawBracketStoryMatch(ctx, id, centerX, centerY, logoSize, options = {}) {
   const item = resolveItemTeams(getItemById(id));
   if (!item) return;
-  const offset = options.compact ? 145 : 155;
+  const offset = options.compact ? 118 : 125;
   const xA = centerX - offset;
   const xB = centerX + offset;
-  await drawBracketStoryLogo(ctx, item.teamA, xA, centerY, logoSize, options);
-  await drawBracketStoryLogo(ctx, item.teamB, xB, centerY, logoSize, options);
-  drawPositionedText(ctx, "X", centerX, centerY, options.compact ? 38 : 42, 70);
+  const drewA = await drawBracketStoryLogo(ctx, item.teamA, xA, centerY, logoSize, options);
+  const drewB = await drawBracketStoryLogo(ctx, item.teamB, xB, centerY, logoSize, options);
+  if (drewA || drewB) {
+    drawPositionedText(ctx, "X", centerX, centerY, options.compact ? 38 : 42, 70);
+  }
 }
 
 async function drawBracketStoryLogo(ctx, teamName, x, y, size, options = {}) {
   const logo = teamLogoCandidates(teamName);
   const waiting = /^Vencedor/i.test(normalizeText(teamName));
-  const opacity = waiting && options.highlightKnownOnly ? 0.36 : 1;
+  if (waiting) return false;
   ctx.save();
-  ctx.globalAlpha = opacity;
+  ctx.globalAlpha = 1;
   ctx.shadowColor = "rgba(0,0,0,0.42)";
   ctx.shadowBlur = 18;
   ctx.shadowOffsetY = 8;
@@ -1501,29 +1503,30 @@ async function drawBracketStoryLogo(ctx, teamName, x, y, size, options = {}) {
     try {
       drawContainedImage(ctx, await loadImage(logo), x, y, size, size);
       ctx.restore();
-      return;
+      return true;
     } catch {
       // Fall back to a text badge below.
     }
   }
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
-  ctx.fillStyle = waiting ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.9)";
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
   roundRect(ctx, x - size / 2, y - size / 2, size, size, 22);
   ctx.fill();
   ctx.strokeStyle = "rgba(255,255,255,0.3)";
   ctx.lineWidth = 3;
   ctx.stroke();
   ctx.restore();
-  drawPositionedText(ctx, waiting ? "?" : normalizeText(teamName).toUpperCase(), x, y, waiting ? 44 : 30, size - 20, {
-    color: waiting ? "rgba(255,255,255,0.72)" : "#151515"
+  drawPositionedText(ctx, normalizeText(teamName).toUpperCase(), x, y, 30, size - 20, {
+    color: "#151515"
   });
+  return true;
 }
 
 function drawBracketArrow(ctx, x, y1, y2) {
   ctx.save();
-  ctx.strokeStyle = "rgba(255,255,255,0.42)";
-  ctx.lineWidth = 6;
+  ctx.strokeStyle = "rgba(255,255,255,0.72)";
+  ctx.lineWidth = 7;
   ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(x, y1);
