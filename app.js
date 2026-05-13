@@ -1465,7 +1465,7 @@ async function drawBracketBranch(ctx, quarterId, semiId, centerX) {
   if (quarterId) {
     drawPositionedText(ctx, "QUARTAS", centerX, 620, 30, 340);
     await drawBracketStoryMatch(ctx, topMatchId, centerX, 770, 200);
-    drawBracketArrow(ctx, centerX, 890, 1010);
+    drawBracketArrow(ctx, centerX, 905, 990);
   }
 
   drawPositionedText(ctx, "SEMIFINAIS", centerX, semiY - 76, 30, 360);
@@ -1526,16 +1526,16 @@ async function drawBracketStoryLogo(ctx, teamName, x, y, size, options = {}) {
 function drawBracketArrow(ctx, x, y1, y2) {
   ctx.save();
   ctx.strokeStyle = "rgba(255,255,255,0.72)";
-  ctx.lineWidth = 7;
+  ctx.lineWidth = 6;
   ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(x, y1);
   ctx.lineTo(x, y2);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(x - 32, y2 - 38);
+  ctx.moveTo(x - 24, y2 - 30);
   ctx.lineTo(x, y2);
-  ctx.lineTo(x + 32, y2 - 38);
+  ctx.lineTo(x + 24, y2 - 30);
   ctx.stroke();
   ctx.restore();
 }
