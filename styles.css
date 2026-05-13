@@ -47,21 +47,20 @@ a {
   top: 0;
   z-index: 10;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  gap: 16px;
   padding: 18px clamp(14px, 3vw, 34px);
   border-bottom: 1px solid var(--line);
   background: rgba(247, 247, 245, 0.94);
   backdrop-filter: blur(14px);
 }
 
-.topbar-actions {
+.topbar-content {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-left: auto;
+  justify-content: center;
+  gap: clamp(14px, 2.5vw, 34px);
+  width: min(1480px, 100%);
 }
 
 .brand {
@@ -78,12 +77,12 @@ a {
   width: 50px;
   height: 50px;
   flex: 0 0 auto;
-  border-radius: 8px;
-  background: var(--ink);
-  color: #fff;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
   font-weight: 900;
-  overflow: hidden;
-  padding: 6px;
+  overflow: visible;
+  padding: 0;
 }
 
 .brand-mark img {
@@ -99,17 +98,16 @@ a {
 .lotus-mark {
   display: grid;
   place-items: center;
+  width: 150px;
   min-width: 130px;
-  height: 42px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--ink);
-  padding: 7px 12px;
+  height: 48px;
+  background: transparent;
+  padding: 0;
 }
 
 .lotus-mark img {
-  max-width: 116px;
-  max-height: 28px;
+  max-width: 100%;
+  max-height: 44px;
   object-fit: contain;
 }
 
@@ -1234,24 +1232,35 @@ button:disabled {
 }
 
 @media (max-width: 760px) {
-  .topbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .topbar-actions {
+  .topbar-content {
     width: 100%;
     flex-wrap: wrap;
-    justify-content: flex-start;
+    justify-content: center;
+    gap: 12px;
   }
 
   .sheet-link,
   .sync-status {
-    width: 100%;
+    flex: 1 1 160px;
   }
 
   .lotus-mark {
-    width: 100%;
+    order: 1;
+    width: 128px;
+    min-width: 128px;
+  }
+
+  .brand {
+    order: 2;
+    flex: 1 1 260px;
+  }
+
+  .sheet-link {
+    order: 3;
+  }
+
+  .sync-status {
+    order: 4;
   }
 
   .notification-head {
