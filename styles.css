@@ -644,7 +644,7 @@ select:focus {
 .photographer-card {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(98px, 1fr) 58px auto;
+  grid-template-columns: minmax(105px, 1fr) 58px auto;
   gap: 7px;
   align-items: end;
   padding: 10px;
@@ -660,6 +660,20 @@ select:focus {
 .photographer-card input {
   min-height: 36px;
   padding: 0 9px;
+}
+
+.photo-range {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 1fr 1fr 76px;
+  gap: 7px;
+}
+
+.photo-total {
+  background: #f7f7f7;
+  color: var(--blue);
+  font-weight: 950;
+  text-align: center;
 }
 
 .remove-photo {
@@ -1013,6 +1027,14 @@ button:disabled {
 
   .photographer-card {
     grid-template-columns: 1fr;
+  }
+
+  .photo-range {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .photo-range label:last-child {
+    grid-column: 1 / -1;
   }
 
   .link-actions {

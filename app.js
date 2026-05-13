@@ -84,6 +84,17 @@ function saveNotifications() {
   localStorage.setItem(notificationKey, JSON.stringify(notifications.slice(0, 30)));
 }
 
+function defaultPhotographer() {
+  return {
+    name: "",
+    sd: "",
+    backup: false,
+    photoStart: "",
+    photoEnd: "",
+    photoTotal: ""
+  };
+}
+
 function defaultRecord() {
   return {
     scoreA: "",
@@ -106,18 +117,37 @@ function defaultRecord() {
     editedPhotosUrl: "",
     liveUrl: "",
     photographers: [
-      { name: "", sd: "", backup: false },
-      { name: "", sd: "", backup: false }
+      defaultPhotographer(),
+      defaultPhotographer()
     ]
   };
 }
 
 function record(id) {
   state[id] ||= defaultRecord();
-  if (!Array.isArray(state[id].photographers) || state[id].photographers.length < 2) {
-    state[id].photographers = defaultRecord().photographers;
+  if (!Array.isArray(state[id].photographers)) {
+    state[id].photographers = [];
+  }
+  state[id].photographers = state[id].photographers.map(normalizePhotographer);
+  while (state[id].photographers.length < 2) {
+    state[id].photographers.push(defaultPhotographer());
   }
   return state[id];
+}
+
+function normalizePhotographer(person = {}) {
+  const normalized = {
+    ...defaultPhotographer(),
+    ...person,
+    name: normalizeText(person.name),
+    sd: normalizeText(person.sd),
+    photoStart: normalizeText(person.photoStart),
+    photoEnd: normalizeText(person.photoEnd),
+    photoTotal: normalizeText(person.photoTotal)
+  };
+  normalized.backup = bool(person.backup);
+  normalized.photoTotal = calculatePhotoTotal(normalized) || normalized.photoTotal;
+  return normalized;
 }
 
 function bool(value) {
@@ -126,6 +156,37 @@ function bool(value) {
 
 function normalizeText(value) {
   return value == null ? "" : String(value);
+}
+
+function splitJoinedValues(value) {
+  return normalizeText(value)
+    .split("|")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function photoNumber(value) {
+  const clean = normalizeText(value).replace(/\D/g, "");
+  return clean ? Number(clean) : NaN;
+}
+
+function calculatePhotoTotal(person) {
+  const start = photoNumber(person?.photoStart);
+  const end = photoNumber(person?.photoEnd);
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return "";
+  return String(end - start + 1);
+}
+
+function photographerPhotoTotal(person) {
+  if (!person) return "";
+  return calculatePhotoTotal(person) || normalizeText(person.photoTotal);
+}
+
+function joinExtraPhotographerField(extras, field) {
+  return extras.map((person) => {
+    if (field === "photoTotal") return photographerPhotoTotal(person);
+    return normalizeText(person[field]);
+  }).filter(Boolean).join(" | ");
 }
 
 function localItem(id) {
@@ -167,25 +228,10 @@ function rowToRecord(row) {
   const editedPhotosDone = bool(row["Fotos editadas feitas"]) || finalizada;
 
   const photographers = [
-    {
-      name: normalizeText(row["Fotógrafo 1"]),
-      sd: normalizeText(row["Nº SD 1"]),
-      backup: bool(row["Backup 1"])
-    },
-    {
-      name: normalizeText(row["Fotógrafo 2"]),
-      sd: normalizeText(row["Nº SD 2"]),
-      backup: bool(row["Backup 2"])
-    }
+    photographerFromRow(row, 1),
+    photographerFromRow(row, 2),
+    ...extraPhotographersFromRow(row)
   ];
-
-  if (row["Fotógrafo extra"] || row["Nº SD extra"] || bool(row["Backup extra"])) {
-    photographers.push({
-      name: normalizeText(row["Fotógrafo extra"]),
-      sd: normalizeText(row["Nº SD extra"]),
-      backup: bool(row["Backup extra"])
-    });
-  }
 
   return {
     scoreA: normalizeText(row["Placar A"]),
@@ -211,12 +257,42 @@ function rowToRecord(row) {
   };
 }
 
+function photographerFromRow(row, index) {
+  return normalizePhotographer({
+    name: normalizeText(row[`Fotógrafo ${index}`]),
+    sd: normalizeText(row[`Nº SD ${index}`]),
+    backup: bool(row[`Backup ${index}`]),
+    photoStart: normalizeText(row[`Nº foto inicial ${index}`]),
+    photoEnd: normalizeText(row[`Nº foto final ${index}`]),
+    photoTotal: normalizeText(row[`Total de fotos ${index}`])
+  });
+}
+
+function extraPhotographersFromRow(row) {
+  const names = splitJoinedValues(row["Fotógrafo extra"]);
+  const sds = splitJoinedValues(row["Nº SD extra"]);
+  const starts = splitJoinedValues(row["Nº foto inicial extra"]);
+  const ends = splitJoinedValues(row["Nº foto final extra"]);
+  const totals = splitJoinedValues(row["Total de fotos extra"]);
+  const count = Math.max(names.length, sds.length, starts.length, ends.length, totals.length, bool(row["Backup extra"]) ? 1 : 0);
+  return Array.from({ length: count }, (_, index) => normalizePhotographer({
+    name: names[index] || "",
+    sd: sds[index] || "",
+    backup: bool(row["Backup extra"]),
+    photoStart: starts[index] || "",
+    photoEnd: ends[index] || "",
+    photoTotal: totals[index] || ""
+  }));
+}
+
 function recordToSheetData(id) {
   const data = record(id);
   const finalized = isRecordFinalized(data);
   const extras = data.photographers.slice(2);
   const extraNames = extras.map((person) => person.name).filter(Boolean).join(" | ");
   const extraSds = extras.map((person) => person.sd).filter(Boolean).join(" | ");
+  const photoA = data.photographers[0] || defaultPhotographer();
+  const photoB = data.photographers[1] || defaultPhotographer();
 
   return {
     "Placar A": data.scoreA,
@@ -227,15 +303,24 @@ function recordToSheetData(id) {
     "Início em": data.startedAt,
     "Fim de jogo em": data.endedAt,
     "Tempo cobertura": data.coverageDuration,
-    "Fotógrafo 1": data.photographers[0]?.name || "",
-    "Nº SD 1": data.photographers[0]?.sd || "",
-    "Backup 1": !!data.photographers[0]?.backup,
-    "Fotógrafo 2": data.photographers[1]?.name || "",
-    "Nº SD 2": data.photographers[1]?.sd || "",
-    "Backup 2": !!data.photographers[1]?.backup,
+    "Fotógrafo 1": photoA.name || "",
+    "Nº SD 1": photoA.sd || "",
+    "Backup 1": !!photoA.backup,
+    "Nº foto inicial 1": photoA.photoStart || "",
+    "Nº foto final 1": photoA.photoEnd || "",
+    "Total de fotos 1": photographerPhotoTotal(photoA),
+    "Fotógrafo 2": photoB.name || "",
+    "Nº SD 2": photoB.sd || "",
+    "Backup 2": !!photoB.backup,
+    "Nº foto inicial 2": photoB.photoStart || "",
+    "Nº foto final 2": photoB.photoEnd || "",
+    "Total de fotos 2": photographerPhotoTotal(photoB),
     "Fotógrafo extra": extraNames,
     "Nº SD extra": extraSds,
     "Backup extra": extras.length ? extras.every((person) => person.backup) : false,
+    "Nº foto inicial extra": joinExtraPhotographerField(extras, "photoStart"),
+    "Nº foto final extra": joinExtraPhotographerField(extras, "photoEnd"),
+    "Total de fotos extra": joinExtraPhotographerField(extras, "photoTotal"),
     "Link fotos originais": data.originalPhotosUrl,
     "Originais enviadas": data.originalPhotosSent,
     "Link arte post início": data.startArtUrl,
@@ -523,6 +608,7 @@ function formatTeamName(name) {
 
 function renderPhotographer(person, index) {
   const n = index + 1;
+  const total = photographerPhotoTotal(person);
   const removeButton = index >= 2
     ? `<button class="remove-photo" type="button" data-remove-photographer="${index}" title="Remover fotógrafo">
         <i data-lucide="x"></i>
@@ -543,6 +629,20 @@ function renderPhotographer(person, index) {
         <input type="checkbox" ${person.backup ? "checked" : ""} data-photo-index="${index}" data-photo-field="backup">
         <span>Backup</span>
       </label>
+      <div class="photo-range">
+        <label>
+          <span>Nº foto inicial</span>
+          <input value="${escapeHtml(person.photoStart)}" placeholder="Inicial" inputmode="numeric" data-photo-index="${index}" data-photo-field="photoStart">
+        </label>
+        <label>
+          <span>Nº foto final</span>
+          <input value="${escapeHtml(person.photoEnd)}" placeholder="Final" inputmode="numeric" data-photo-index="${index}" data-photo-field="photoEnd">
+        </label>
+        <label>
+          <span>Total de fotos</span>
+          <input class="photo-total" value="${escapeHtml(total)}" placeholder="0" readonly aria-label="Total de fotos fotógrafo ${n}">
+        </label>
+      </div>
     </div>
   `;
 }
@@ -605,6 +705,16 @@ function updateField(field, value) {
   }
   saveState();
   queueSave(item.id);
+}
+
+function updatePhotographerField(data, index, field, target) {
+  data.photographers[index] = normalizePhotographer(data.photographers[index]);
+  data.photographers[index][field] = target.type === "checkbox" ? target.checked : target.value;
+  if (field === "photoStart" || field === "photoEnd") {
+    data.photographers[index].photoTotal = calculatePhotoTotal(data.photographers[index]);
+    const totalInput = target.closest(".photographer-card")?.querySelector(".photo-total");
+    if (totalInput) totalInput.value = photographerPhotoTotal(data.photographers[index]);
+  }
 }
 
 function syncStartState(data) {
@@ -1240,7 +1350,7 @@ function bindEvents() {
     if (event.target.dataset.photoIndex) {
       const index = Number(event.target.dataset.photoIndex);
       const field = event.target.dataset.photoField;
-      data.photographers[index][field] = event.target.type === "checkbox" ? event.target.checked : event.target.value;
+      updatePhotographerField(data, index, field, event.target);
       saveState();
       queueSave(item.id);
     }
@@ -1252,7 +1362,7 @@ function bindEvents() {
     if (event.target.dataset.photoIndex) {
       const index = Number(event.target.dataset.photoIndex);
       const field = event.target.dataset.photoField;
-      data.photographers[index][field] = event.target.type === "checkbox" ? event.target.checked : event.target.value;
+      updatePhotographerField(data, index, field, event.target);
       saveState();
       queueSave(item.id, true);
       render();
@@ -1275,7 +1385,7 @@ function bindEvents() {
       return;
     }
     if (add) {
-      data.photographers.push({ name: "", sd: "", backup: false });
+      data.photographers.push(defaultPhotographer());
       saveState();
       queueSave(item.id, true);
       render();
