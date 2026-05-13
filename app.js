@@ -12,13 +12,25 @@ const STORY_BACKGROUNDS = {
 };
 const STORY_WIDTH = 1080;
 const STORY_HEIGHT = 1920;
+function logoPaths(fileName) {
+  return [`assets/logos/${fileName}`, fileName];
+}
+
 const TEAM_LOGOS = {
-  "Multivix Vitória": "assets/logos/multivix-vitoria.png",
-  "Multivix Cachoeiro": "assets/logos/multivix-cachoeiro.png",
-  "UFES": "assets/logos/ufes.png",
-  "EMESCAM": "assets/logos/emescam.png",
-  "UVV": "assets/logos/uvv.png",
-  "UNESC": "assets/logos/unesc.png"
+  "Multivix Vitória": logoPaths("multivix-vitoria.png"),
+  "Multivix Cachoeiro": logoPaths("multivix-cachoeiro.png"),
+  "UFES": logoPaths("ufes.png"),
+  "EMESCAM": logoPaths("emescam.png"),
+  "UVV": logoPaths("uvv.png"),
+  "UNESC": logoPaths("unesc.png")
+};
+const TEAM_LOGO_FILES = {
+  "multivix-vitoria": "multivix-vitoria.png",
+  "multivix-cachoeiro": "multivix-cachoeiro.png",
+  "ufes": "ufes.png",
+  "emescam": "emescam.png",
+  "uvv": "uvv.png",
+  "unesc": "unesc.png"
 };
 const BRACKET_DEFINITIONS = [
   { id: "futsal-masculino", title: "Futsal Masculino", qf1: "JCM-013", qf2: "JCM-001", sf1: "JCM-018", sf2: "JCM-020", final: "JCM-053" },
@@ -651,9 +663,9 @@ function renderScore(item, data) {
 }
 
 function renderTeam(name, side) {
-  const logo = TEAM_LOGOS[name];
-  const img = logo
-    ? `<img class="team-logo" src="${escapeHtml(logo)}" alt="" onerror="this.remove()">`
+  const logo = teamLogoCandidates(name);
+  const img = logo.length
+    ? `<img ${imageAttributes("team-logo", logo)}>`
     : "";
   const label = `<span>${formatTeamName(name)}</span>`;
   const content = side === "left" ? `${label}${img}` : `${img}${label}`;
@@ -668,6 +680,41 @@ function formatTeamName(name) {
   }
   return escapeHtml(normalized);
 }
+
+function teamLogoCandidates(name) {
+  const normalized = normalizeText(name);
+  const exact = TEAM_LOGOS[normalized];
+  if (exact) return Array.isArray(exact) ? exact : [exact];
+  const fileName = TEAM_LOGO_FILES[slugify(normalized)];
+  return fileName ? logoPaths(fileName) : [];
+}
+
+function imageAttributes(className, candidates) {
+  const sources = (Array.isArray(candidates) ? candidates : [candidates]).filter(Boolean);
+  const fallbackSources = sources.slice(1);
+  const fallbackAttr = fallbackSources.length
+    ? ` data-fallback-srcs="${escapeHtml(JSON.stringify(fallbackSources))}"`
+    : "";
+  return `class="${escapeHtml(className)}" src="${escapeHtml(sources[0])}" alt=""${fallbackAttr} onerror="handleImageError(this)"`;
+}
+
+function handleImageError(image) {
+  let fallbacks = [];
+  try {
+    fallbacks = JSON.parse(image.dataset.fallbackSrcs || "[]");
+  } catch {
+    fallbacks = [];
+  }
+  const next = fallbacks.shift();
+  if (next) {
+    image.dataset.fallbackSrcs = JSON.stringify(fallbacks);
+    image.src = next;
+    return;
+  }
+  image.remove();
+}
+
+window.handleImageError = handleImageError;
 
 function renderPhotographer(person, index) {
   const n = index + 1;
@@ -928,13 +975,13 @@ function renderBracketMatch(id) {
 
 function renderBracketTeam(name, score, isWinner) {
   const normalized = normalizeText(name);
-  const logo = TEAM_LOGOS[normalized];
+  const logo = teamLogoCandidates(normalized);
   const waiting = /^Vencedor/i.test(normalized);
   const classes = ["bracket-team", isWinner ? "winner" : "", waiting ? "waiting" : ""].filter(Boolean).join(" ");
   const safeScore = normalizeText(score);
   return `
     <div class="${classes}">
-      ${logo ? `<img class="bracket-team-logo" src="${escapeHtml(logo)}" alt="" onerror="this.remove()">` : `<span class="bracket-team-logo fallback">${escapeHtml(teamInitials(normalized))}</span>`}
+      ${logo.length ? `<img ${imageAttributes("bracket-team-logo", logo)}>` : `<span class="bracket-team-logo fallback">${escapeHtml(teamInitials(normalized))}</span>`}
       <strong>${formatTeamName(normalized)}</strong>
       <span class="bracket-score">${escapeHtml(safeScore || "-")}</span>
     </div>
@@ -1101,6 +1148,12 @@ function slugify(value) {
 }
 
 function loadImage(src) {
+  if (Array.isArray(src)) {
+    return src.reduce(
+      (promise, candidate) => promise.catch(() => loadImage(candidate)),
+      Promise.reject(new Error("Tentando imagens alternativas."))
+    );
+  }
   return new Promise((resolve, reject) => {
     if (!src) {
       reject(new Error("Imagem não informada."));
@@ -1316,8 +1369,8 @@ async function drawStory(type, item, data) {
   const logoY = isResult ? 820 : isPhotos ? 835 : 805;
   const logoAX = 315;
   const logoBX = 765;
-  const logoA = TEAM_LOGOS[item.teamA];
-  const logoB = TEAM_LOGOS[item.teamB];
+  const logoA = teamLogoCandidates(item.teamA);
+  const logoB = teamLogoCandidates(item.teamB);
 
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.38)";
