@@ -939,7 +939,15 @@ select:focus {
   gap: 10px;
 }
 
-.bracket-card-head > span {
+.bracket-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bracket-card-actions > span {
   display: inline-flex;
   align-items: center;
   min-height: 30px;
@@ -950,6 +958,10 @@ select:focus {
   font-size: 0.8rem;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.bracket-card-actions .generate-art {
+  min-height: 36px;
 }
 
 .bracket-columns {

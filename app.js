@@ -8,6 +8,7 @@ const STORY_BACKGROUNDS = {
   start: "story-background-inicio.png",
   result: "story-background-resultado.png",
   photos: "story-background-fotos.png",
+  bracket: "story-background-chaveamento.png",
   fallback: "story-background.png"
 };
 const STORY_WIDTH = 1080;
@@ -878,7 +879,13 @@ function renderBracketCard(bracket) {
           <p>Chaveamento</p>
           <h2>${escapeHtml(bracket.title)}</h2>
         </div>
-        <span>${escapeHtml(bracketSummary(bracket))}</span>
+        <div class="bracket-card-actions">
+          <span>${escapeHtml(bracketSummary(bracket))}</span>
+          <button class="generate-art" type="button" data-bracket-art="${escapeHtml(bracket.id)}" title="Gerar arte do chaveamento">
+            <i data-lucide="wand-sparkles"></i>
+            <span>Gerar arte</span>
+          </button>
+        </div>
       </header>
       <div class="bracket-columns">
         <div class="bracket-column">
@@ -1100,6 +1107,10 @@ function storyFileName(item, type) {
   return `${slugify(base)}.png`;
 }
 
+function bracketStoryFileName(bracket) {
+  return `${slugify(`chaveamento-atualizado-${bracket.title}`)}.png`;
+}
+
 function slugify(value) {
   return normalizeText(value)
     .normalize("NFD")
@@ -1167,6 +1178,24 @@ function drawStoryText(ctx, text, y, size, maxWidth) {
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
+}
+
+function drawPositionedText(ctx, text, x, y, size, maxWidth, options = {}) {
+  let fontSize = size;
+  ctx.save();
+  ctx.textAlign = options.align || "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = options.color || "#ffffff";
+  ctx.shadowColor = options.shadow === false ? "transparent" : "rgba(0, 0, 0, 0.35)";
+  ctx.shadowBlur = options.shadow === false ? 0 : 16;
+  ctx.shadowOffsetY = options.shadow === false ? 0 : 6;
+  do {
+    ctx.font = `${options.weight || 900} ${fontSize}px Inter, Arial, sans-serif`;
+    if (ctx.measureText(text).width <= maxWidth) break;
+    fontSize -= 3;
+  } while (fontSize > 28);
+  ctx.fillText(text, x, y);
+  ctx.restore();
 }
 
 function modalityParts(item) {
@@ -1301,6 +1330,25 @@ async function openStoryArt(type) {
   if (window.lucide) lucide.createIcons();
 }
 
+async function openBracketArt(bracketId) {
+  const bracket = BRACKET_DEFINITIONS.find((item) => item.id === bracketId);
+  if (!bracket) return;
+
+  els.storyModal.hidden = false;
+  els.storyTitle.textContent = "Arte de chaveamento";
+  els.downloadStory.disabled = true;
+  els.shareStory.disabled = true;
+  currentStory = {
+    blob: null,
+    fileName: bracketStoryFileName(bracket),
+    title: `Chaveamento atualizado - ${bracket.title}`,
+    linkToCopy: ""
+  };
+
+  await drawBracketStory(bracket);
+  if (window.lucide) lucide.createIcons();
+}
+
 async function drawStory(type, item, data) {
   const canvas = els.storyCanvas;
   const ctx = canvas.getContext("2d");
@@ -1373,6 +1421,130 @@ async function drawStory(type, item, data) {
   currentStory.blob = await canvasToBlob(canvas);
   els.downloadStory.disabled = false;
   els.shareStory.disabled = false;
+}
+
+async function drawBracketStory(bracket) {
+  const canvas = els.storyCanvas;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+
+  await drawStoryBackground(ctx, [STORY_BACKGROUNDS.bracket, STORY_BACKGROUNDS.photos, STORY_BACKGROUNDS.fallback]);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+  ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+
+  drawPositionedText(ctx, "CHAVEAMENTO ATUALIZADO", 74, 405, 38, 540, {
+    align: "left",
+    color: "rgba(255,255,255,0.58)",
+    weight: 850
+  });
+  drawPositionedText(ctx, bracket.title.toUpperCase(), 74, 460, 54, 820, { align: "left" });
+
+  await drawBracketBranch(ctx, bracket.qf1, bracket.sf1, 300, true);
+  await drawBracketBranch(ctx, bracket.qf2, bracket.sf2, 780, false);
+  await drawBracketFinal(ctx, bracket.final);
+
+  currentStory.blob = await canvasToBlob(canvas);
+  els.downloadStory.disabled = false;
+  els.shareStory.disabled = false;
+}
+
+async function drawStoryBackground(ctx, candidates) {
+  for (const candidate of candidates.filter(Boolean)) {
+    try {
+      drawCover(ctx, await loadImage(candidate));
+      return;
+    } catch {
+      // Try the next configured background.
+    }
+  }
+  drawFallbackBackground(ctx);
+}
+
+async function drawBracketBranch(ctx, quarterId, semiId, centerX, isLeft) {
+  const topMatchId = quarterId || semiId;
+  const semiY = quarterId ? 1115 : 850;
+  if (quarterId) {
+    drawPositionedText(ctx, "QUARTAS", centerX, 635, 38, 360);
+    await drawBracketStoryMatch(ctx, topMatchId, centerX, 765, 142);
+    drawBracketArrow(ctx, centerX, 895, 1030);
+  }
+
+  drawPositionedText(ctx, "SEMIFINAIS", centerX, semiY - 92, 38, 380);
+  await drawBracketStoryMatch(ctx, semiId, centerX, semiY + 45, 138, { highlightKnownOnly: true });
+}
+
+async function drawBracketFinal(ctx, finalId) {
+  drawPositionedText(ctx, "FINAL", STORY_WIDTH / 2, 1420, 38, 360);
+  await drawBracketStoryMatch(ctx, finalId, STORY_WIDTH / 2, 1538, 132, { compact: true, highlightKnownOnly: true });
+}
+
+async function drawBracketStoryMatch(ctx, id, centerX, centerY, logoSize, options = {}) {
+  const item = resolveItemTeams(getItemById(id));
+  if (!item) return;
+  const offset = options.compact ? 122 : 135;
+  const xA = centerX - offset;
+  const xB = centerX + offset;
+  await drawBracketStoryLogo(ctx, item.teamA, xA, centerY, logoSize, options);
+  await drawBracketStoryLogo(ctx, item.teamB, xB, centerY, logoSize, options);
+  drawPositionedText(ctx, "X", centerX, centerY, options.compact ? 42 : 48, 80);
+}
+
+async function drawBracketStoryLogo(ctx, teamName, x, y, size, options = {}) {
+  const logo = teamLogoCandidates(teamName);
+  const waiting = /^Vencedor/i.test(normalizeText(teamName));
+  const opacity = waiting && options.highlightKnownOnly ? 0.36 : 1;
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.shadowColor = "rgba(0,0,0,0.42)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 8;
+  if (logo) {
+    try {
+      drawContainedImage(ctx, await loadImage(logo), x, y, size, size);
+      ctx.restore();
+      return;
+    } catch {
+      // Fall back to a text badge below.
+    }
+  }
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = waiting ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.9)";
+  roundRect(ctx, x - size / 2, y - size / 2, size, size, 24);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.3)";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.restore();
+  drawPositionedText(ctx, waiting ? "?" : normalizeText(teamName).toUpperCase(), x, y, waiting ? 56 : 32, size - 20);
+}
+
+function drawBracketArrow(ctx, x, y1, y2) {
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.88)";
+  ctx.lineWidth = 8;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x, y1);
+  ctx.lineTo(x, y2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - 36, y2 - 42);
+  ctx.lineTo(x, y2);
+  ctx.lineTo(x + 36, y2 - 42);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
 }
 
 function canvasToBlob(canvas) {
@@ -1533,6 +1705,11 @@ function bindEvents() {
 
   els.bracketsBoard?.addEventListener("click", (event) => {
     const open = event.target.closest("[data-open-bracket-game]");
+    const art = event.target.closest("[data-bracket-art]");
+    if (art) {
+      openBracketArt(art.dataset.bracketArt).catch(() => showToast("Não consegui gerar a arte do chaveamento."));
+      return;
+    }
     if (!open) return;
     openBracketGame(open.dataset.openBracketGame);
   });
