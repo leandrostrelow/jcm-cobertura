@@ -1321,14 +1321,14 @@ async function drawStory(type, item, data) {
 
   const isResult = type === "result";
   const isPhotos = type === "photos";
-  const titleY = isResult || isPhotos ? 460 : 520;
+  const titleY = isPhotos ? 555 : isResult ? 460 : 520;
   drawStoryText(ctx, storyLabel(type), titleY, isResult ? 70 : 74, 930);
   if (isResult || isPhotos) {
-    drawStoryModalityCompact(ctx, item, 555, 48);
+    drawStoryModalityCompact(ctx, item, isPhotos ? 650 : 555, 48);
   }
 
   const logoSize = isResult ? 345 : isPhotos ? 360 : 370;
-  const logoY = isResult ? 820 : isPhotos ? 835 : 805;
+  const logoY = isResult ? 820 : isPhotos ? 930 : 805;
   const logoAX = 315;
   const logoBX = 765;
   const logoA = teamLogoCandidates(item.teamA);
