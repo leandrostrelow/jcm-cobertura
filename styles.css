@@ -670,7 +670,7 @@ select:focus {
 }
 
 .photo-total {
-  background: #f7f7f7;
+  background: #fff;
   color: var(--blue);
   font-weight: 950;
   text-align: center;

@@ -146,7 +146,7 @@ function normalizePhotographer(person = {}) {
     photoTotal: normalizeText(person.photoTotal)
   };
   normalized.backup = bool(person.backup);
-  normalized.photoTotal = calculatePhotoTotal(normalized) || normalized.photoTotal;
+  normalized.photoTotal = normalized.photoTotal || calculatePhotoTotal(normalized);
   return normalized;
 }
 
@@ -179,7 +179,7 @@ function calculatePhotoTotal(person) {
 
 function photographerPhotoTotal(person) {
   if (!person) return "";
-  return calculatePhotoTotal(person) || normalizeText(person.photoTotal);
+  return normalizeText(person.photoTotal) || calculatePhotoTotal(person);
 }
 
 function joinExtraPhotographerField(extras, field) {
@@ -640,7 +640,7 @@ function renderPhotographer(person, index) {
         </label>
         <label>
           <span>Total de fotos</span>
-          <input class="photo-total" value="${escapeHtml(total)}" placeholder="0" readonly aria-label="Total de fotos fotógrafo ${n}">
+          <input class="photo-total" value="${escapeHtml(total)}" placeholder="0" inputmode="numeric" data-photo-index="${index}" data-photo-field="photoTotal" aria-label="Total de fotos fotógrafo ${n}">
         </label>
       </div>
     </div>
