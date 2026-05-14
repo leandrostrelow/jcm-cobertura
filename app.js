@@ -201,6 +201,37 @@ function normalizeText(value) {
   return value == null ? "" : String(value);
 }
 
+function cleanDisplayText(value) {
+  return normalizeText(value)
+    .replace(/Atl\?ticas/g, "Atléticas")
+    .replace(/Atl\?tica/g, "Atlética")
+    .replace(/atl\?ticas/g, "atléticas")
+    .replace(/atl\?tica/g, "atlética")
+    .replace(/edit\?veis/g, "editáveis")
+    .replace(/\?nico/g, "único");
+}
+
+function titleCaseWords(value) {
+  return cleanDisplayText(value).replace(/\p{L}[\p{L}\p{M}]*/gu, (word) => {
+    if (word.length <= 2 && word === word.toUpperCase()) return word;
+    return word.charAt(0).toLocaleUpperCase("pt-BR") + word.slice(1).toLocaleLowerCase("pt-BR");
+  });
+}
+
+function scheduleSortValue(item) {
+  return [
+    item.dateISO || formatSheetDate(item.date),
+    formatSheetTime(item.time),
+    item.venue || "",
+    item.modality || "",
+    item.phase || ""
+  ].join("|");
+}
+
+function sortScheduleItems(items) {
+  return [...items].sort((a, b) => scheduleSortValue(a).localeCompare(scheduleSortValue(b), "pt-BR", { numeric: true }));
+}
+
 function formatSheetDate(value, fallback = "") {
   const text = normalizeText(value || fallback).trim();
   if (!text) return "";
@@ -264,16 +295,16 @@ function rowToItem(row) {
     id: normalizeText(row.ID || fallback.id),
     weekend: normalizeText(row["Fim de semana"] || fallback.weekend),
     date: formatSheetDate(row.Data, fallback.date),
-    weekday: normalizeText(row.Dia || fallback.weekday),
+    weekday: cleanDisplayText(row.Dia || fallback.weekday),
     time: formatSheetTime(row["Horário"], fallback.time),
-    venue: normalizeText(row.Local || fallback.venue),
-    type: normalizeText(row.Tipo || fallback.type),
-    modality: normalizeText(row.Modalidade || fallback.modality),
-    phase: normalizeText(row.Fase || fallback.phase),
-    teamA: normalizeText(row["Equipe A"] || fallback.teamA),
-    teamB: normalizeText(row["Equipe B"] || fallback.teamB),
-    participants: normalizeText(fallback.participants || row.Observações),
-    notes: normalizeText(row.Observações || fallback.notes)
+    venue: cleanDisplayText(row.Local || fallback.venue),
+    type: cleanDisplayText(row.Tipo || fallback.type),
+    modality: cleanDisplayText(row.Modalidade || fallback.modality),
+    phase: cleanDisplayText(row.Fase || fallback.phase),
+    teamA: cleanDisplayText(row["Equipe A"] || fallback.teamA),
+    teamB: cleanDisplayText(row["Equipe B"] || fallback.teamB),
+    participants: cleanDisplayText(fallback.participants || row.Observações),
+    notes: cleanDisplayText(row.Observações || fallback.notes)
   };
 }
 
@@ -440,12 +471,12 @@ function shortDate(date) {
 }
 
 function getDates() {
-  return [...new Set(schedule.map((item) => item.date).filter(Boolean))];
+  return [...new Set(sortScheduleItems(schedule).map((item) => item.date).filter(Boolean))];
 }
 
 function getVisibleGames() {
   const date = els.dateFilter.value;
-  return schedule.filter((item) => item.type !== "Chaveamento" && (date === "all" || item.date === date));
+  return sortScheduleItems(schedule.filter((item) => item.type !== "Chaveamento" && (date === "all" || item.date === date)));
 }
 
 function gameItems() {
@@ -457,8 +488,7 @@ function isAgendaEvent(item) {
 }
 
 function agendaItems() {
-  return [...gameItems(), ...schedule.filter(isAgendaEvent)]
-    .sort((a, b) => `${a.dateISO || ""} ${a.time || ""}`.localeCompare(`${b.dateISO || ""} ${b.time || ""}`));
+  return sortScheduleItems([...gameItems(), ...schedule.filter(isAgendaEvent)]);
 }
 
 function upcomingGames(count = 4, fromId = selectedId) {
@@ -590,7 +620,7 @@ function progress(item) {
 
 function optionLabel(item) {
   const opponent = item.teamA && item.teamB ? `${item.teamA} x ${item.teamB}` : item.participants || item.phase;
-  return `${item.time} - ${item.modality} - ${item.phase} - ${opponent}`;
+  return `${item.time} - ${item.modality} - ${titleCaseWords(item.phase)} - ${opponent}`;
 }
 
 function nowIso() {
@@ -710,7 +740,7 @@ function render() {
       <div class="scoreboard">
         <div class="match-tags">
           <span class="pill modality">${escapeHtml(item.modality)}</span>
-          <span class="pill phase">${escapeHtml(item.phase)}</span>
+          <span class="pill phase">${escapeHtml(titleCaseWords(item.phase))}</span>
         </div>
         ${renderScore(item, data)}
       </div>
@@ -733,11 +763,11 @@ function render() {
       <section class="field-group">
         <p class="field-title">Links da operação</p>
         <div class="link-grid">
-          ${renderLinkField("originalPhotosUrl", "Link fotos originais", data.originalPhotosUrl, "hard-drive-download")}
-          ${renderArtCard("start", "Post início")}
-          ${renderArtCard("result", "Post resultado")}
-          ${renderLinkField("editedPhotosUrl", "Link fotos editadas", data.editedPhotosUrl, "download")}
-          ${renderLinkField("liveUrl", "Link da live ao vivo", data.liveUrl, "radio")}
+          ${renderLinkField("originalPhotosUrl", "Link Fotos Originais", data.originalPhotosUrl, "hard-drive-download")}
+          ${renderArtCard("start", "Post Início")}
+          ${renderArtCard("result", "Post Resultado")}
+          ${renderLinkField("editedPhotosUrl", "Link Fotos Editadas", data.editedPhotosUrl, "download")}
+          ${renderLinkField("liveUrl", "Link Da Live Ao Vivo", data.liveUrl, "radio")}
         </div>
       </section>
 
@@ -745,13 +775,13 @@ function render() {
         <p class="field-title">Checklist</p>
         <div class="done-grid">
           ${doneButton("started", "Início", data.started, "play")}
-          ${doneButton("startArtDone", "Arte início", data.startArtDone, "badge-check")}
-          ${doneButton("resultArtDone", "Arte resultado", data.resultArtDone, "badge-check")}
-          ${doneButton("originalPhotosSent", "Backup originais", data.originalPhotosSent, "upload-cloud")}
+          ${doneButton("startArtDone", "Arte Início", data.startArtDone, "badge-check")}
+          ${doneButton("resultArtDone", "Arte Resultado", data.resultArtDone, "badge-check")}
+          ${doneButton("originalPhotosSent", "Backup Originais", data.originalPhotosSent, "upload-cloud")}
           ${doneButton("selectionDone", "Seleção", data.selectionDone, "list-checks")}
           ${doneButton("editingDone", "Edição", data.editingDone, "pen-line")}
           ${doneButton("reviewDone", "Conferência", data.reviewDone, "badge-check")}
-          ${doneButton("editedPhotosDone", "Fotos editadas", data.editedPhotosDone, "images")}
+          ${doneButton("editedPhotosDone", "Fotos Editadas", data.editedPhotosDone, "images")}
         </div>
       </section>
     </div>
@@ -831,15 +861,15 @@ function renderPhotographer(person, index) {
       </label>
       <div class="photo-range">
         <label>
-          <span>Nº foto inicial</span>
+          <span>Nº Foto Inicial</span>
           <input value="${escapeHtml(person.photoStart)}" placeholder="Inicial" inputmode="numeric" data-photo-index="${index}" data-photo-field="photoStart">
         </label>
         <label>
-          <span>Nº foto final</span>
+          <span>Nº Foto Final</span>
           <input value="${escapeHtml(person.photoEnd)}" placeholder="Final" inputmode="numeric" data-photo-index="${index}" data-photo-field="photoEnd">
         </label>
         <label>
-          <span>Total de fotos</span>
+          <span>Total de Fotos</span>
           <input class="photo-total" value="${escapeHtml(total)}" placeholder="0" inputmode="numeric" data-photo-index="${index}" data-photo-field="photoTotal" aria-label="Total de fotos fotógrafo ${n}">
         </label>
       </div>
@@ -881,7 +911,7 @@ function renderArtCard(type, title) {
       </header>
       <button class="generate-art full" type="button" data-art-type="${type}" title="Gerar arte para story">
         <i data-lucide="wand-sparkles"></i>
-        <span>Gerar arte</span>
+        <span>Gerar Arte</span>
       </button>
     </div>
   `;
@@ -1069,7 +1099,7 @@ function renderBracketMatch(id) {
     <article class="${matchClasses}">
       <header>
         <span>${escapeHtml(`${shortDate(item.date)} ${item.time}`)}</span>
-        <strong>${escapeHtml(item.phase)}</strong>
+        <strong>${escapeHtml(titleCaseWords(item.phase))}</strong>
       </header>
       <div class="bracket-teams">
         ${renderBracketTeam(item.teamA, data.scoreA, scoreReady && winner === item.teamA, {
@@ -1180,7 +1210,7 @@ function renderProgressCard(item) {
       <div class="progress-main">
         <div>
           <span>${escapeHtml(`${shortDate(item.date)} ${item.time}`)}</span>
-          <h3>${escapeHtml(item.modality)} - ${escapeHtml(item.phase)}</h3>
+          <h3>${escapeHtml(item.modality)} - ${escapeHtml(titleCaseWords(item.phase))}</h3>
           <p>${escapeHtml(matchTitle(item))}</p>
         </div>
         <strong class="status ${statusClass}">${escapeHtml(status)}</strong>
