@@ -491,6 +491,53 @@ function agendaItems() {
   return sortScheduleItems([...gameItems(), ...schedule.filter(isAgendaEvent)]);
 }
 
+function agendaGroupKey(item) {
+  return slugify(item.sport || item.modality || "");
+}
+
+function smartAgendaChunks(items, maxItems = 4) {
+  const runs = [];
+  items.forEach((item) => {
+    const key = agendaGroupKey(item);
+    const last = runs[runs.length - 1];
+    if (last && last.key === key) {
+      last.items.push(item);
+      return;
+    }
+    runs.push({ key, items: [item] });
+  });
+
+  const chunks = [];
+  let current = [];
+
+  const pushCurrent = () => {
+    if (!current.length) return;
+    chunks.push(current);
+    current = [];
+  };
+
+  runs.forEach((run) => {
+    const queue = [...run.items];
+    while (queue.length) {
+      const remaining = maxItems - current.length;
+      if (current.length && queue.length > remaining) {
+        pushCurrent();
+        continue;
+      }
+
+      if (!current.length && queue.length > maxItems) {
+        chunks.push(queue.splice(0, maxItems));
+        continue;
+      }
+
+      current.push(...queue.splice(0, remaining));
+    }
+  });
+
+  pushCurrent();
+  return chunks;
+}
+
 function upcomingGames(count = 4, fromId = selectedId) {
   const games = gameItems();
   const currentIndex = games.findIndex((item) => item.id === fromId);
@@ -508,9 +555,10 @@ function agendaPostBatches() {
 
   const batches = [];
   dateGroups.forEach((items, date) => {
-    const totalChunks = Math.ceil(items.length / 4);
+    const chunks = smartAgendaChunks(items, 4);
+    const totalChunks = chunks.length;
     for (let index = 0; index < totalChunks; index += 1) {
-      const games = items.slice(index * 4, index * 4 + 4);
+      const games = chunks[index];
       const first = games[0] || {};
       batches.push({
         id: `agenda-${slugify(date)}-${index + 1}`,
