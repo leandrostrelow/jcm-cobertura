@@ -9,6 +9,7 @@ const STORY_BACKGROUNDS = {
   result: "story-background-resultado.png",
   photos: "story-background-fotos.png",
   bracket: "story-background-chaveamento.png",
+  upcoming: "story-background-proximos.png",
   fallback: "story-background.png"
 };
 const STORY_WIDTH = 1080;
@@ -63,10 +64,14 @@ const saveTimers = {};
 
 const els = {
   viewTabs: document.querySelector(".view-tabs"),
-  coveragePanels: document.querySelectorAll(".picker, #notificationCenter, #matchCard"),
+  coveragePanels: document.querySelectorAll(".picker, #notificationCenter, #matchCard, #upcomingPanel"),
   bracketsView: document.querySelector("#bracketsView"),
   bracketsBoard: document.querySelector("#bracketsBoard"),
   bracketFilter: document.querySelector("#bracketFilter"),
+  progressView: document.querySelector("#progressView"),
+  progressBoard: document.querySelector("#progressBoard"),
+  progressFilter: document.querySelector("#progressFilter"),
+  upcomingPanel: document.querySelector("#upcomingPanel"),
   dateFilter: document.querySelector("#dateFilter"),
   gamePicker: document.querySelector("#gamePicker"),
   prevGame: document.querySelector("#prevGame"),
@@ -383,6 +388,17 @@ function getVisibleGames() {
   return schedule.filter((item) => date === "all" || item.date === date);
 }
 
+function gameItems() {
+  return schedule.filter((item) => item.type === "Jogo" && item.teamA && item.teamB);
+}
+
+function upcomingGames(count = 4, fromId = selectedId) {
+  const games = gameItems();
+  const currentIndex = games.findIndex((item) => item.id === fromId);
+  const startIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
+  return games.slice(startIndex).filter((item) => !isFinalized(item)).slice(0, count).map(resolveItemTeams);
+}
+
 function getItemById(id) {
   return schedule.find((item) => item.id === id) || localSchedule.find((item) => item.id === id);
 }
@@ -546,9 +562,11 @@ function render() {
   const status = statusForRecord(data);
   const statusClass = statusClassForStatus(status);
   const coverageEnded = status === "Fim de jogo" || status === "Finalizada";
+  const finalized = isRecordFinalized(data);
+  els.gamePicker?.classList.toggle("finalized-picker", finalized);
 
   els.matchCard.innerHTML = `
-    <div class="match-top">
+    <div class="match-top ${finalized ? "finalized-top" : ""}">
       <div class="match-meta">
         <div class="meta-row">
           <div class="time-card">
@@ -633,6 +651,8 @@ function render() {
   `;
 
   renderBrackets();
+  renderProgressBoard();
+  renderUpcomingPanel();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -834,15 +854,17 @@ function renderNotifications() {
 }
 
 function switchView(view) {
-  activeView = view === "brackets" ? "brackets" : "coverage";
+  activeView = ["brackets", "progress"].includes(view) ? view : "coverage";
   els.coveragePanels.forEach((panel) => {
     panel.hidden = activeView !== "coverage";
   });
   if (els.bracketsView) els.bracketsView.hidden = activeView !== "brackets";
+  if (els.progressView) els.progressView.hidden = activeView !== "progress";
   document.querySelectorAll(".view-tab").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === activeView);
   });
   if (activeView === "brackets") renderBrackets();
+  if (activeView === "progress") renderProgressBoard();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -974,6 +996,109 @@ function openBracketGame(id) {
   switchView("coverage");
   render();
   els.matchCard.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderProgressBoard() {
+  if (!els.progressBoard) return;
+  const filter = els.progressFilter?.value || "all";
+  const games = gameItems().map(resolveItemTeams).filter((item) => {
+    const status = statusForRecord(record(item.id));
+    if (filter === "finalized") return status === "Finalizada";
+    if (filter === "ended") return status === "Fim de jogo";
+    if (filter === "active") return status === "Em cobertura";
+    if (filter === "pending") return status === "Pendente";
+    return true;
+  });
+  const totals = progressTotals();
+  els.progressBoard.innerHTML = `
+    <div class="progress-summary">
+      <div><strong>${totals.finalized}</strong><span>Finalizadas</span></div>
+      <div><strong>${totals.ended}</strong><span>Fim de jogo</span></div>
+      <div><strong>${totals.active}</strong><span>Em cobertura</span></div>
+      <div><strong>${totals.pending}</strong><span>Pendentes</span></div>
+    </div>
+    <div class="progress-list">
+      ${games.length ? games.map(renderProgressCard).join("") : `<div class="progress-empty">Nenhum jogo nesse filtro.</div>`}
+    </div>
+  `;
+  if (window.lucide) lucide.createIcons();
+}
+
+function progressTotals() {
+  return gameItems().reduce((acc, item) => {
+    const status = statusForRecord(record(item.id));
+    if (status === "Finalizada") acc.finalized += 1;
+    else if (status === "Fim de jogo") acc.ended += 1;
+    else if (status === "Em cobertura") acc.active += 1;
+    else acc.pending += 1;
+    return acc;
+  }, { finalized: 0, ended: 0, active: 0, pending: 0 });
+}
+
+function renderProgressCard(item) {
+  const data = record(item.id);
+  const status = statusForRecord(data);
+  const statusClass = statusClassForStatus(status);
+  const itemProgress = progress(item);
+  return `
+    <article class="progress-card ${statusClass}">
+      <div class="progress-main">
+        <div>
+          <span>${escapeHtml(`${shortDate(item.date)} ${item.time}`)}</span>
+          <h3>${escapeHtml(item.modality)} - ${escapeHtml(item.phase)}</h3>
+          <p>${escapeHtml(matchTitle(item))}</p>
+        </div>
+        <strong class="status ${statusClass}">${escapeHtml(status)}</strong>
+      </div>
+      <div class="progress-meter" aria-label="${itemProgress.done} de ${itemProgress.total} ações feitas">
+        <span style="width: ${itemProgress.percent}%"></span>
+      </div>
+      <footer>
+        <span>${itemProgress.done} de ${itemProgress.total} ações feitas</span>
+        <button class="secondary-button slim" type="button" data-open-progress-game="${escapeHtml(item.id)}">
+          <i data-lucide="external-link"></i>
+          <span>Abrir</span>
+        </button>
+      </footer>
+    </article>
+  `;
+}
+
+function renderUpcomingPanel() {
+  if (!els.upcomingPanel) return;
+  const games = upcomingGames(4);
+  els.upcomingPanel.innerHTML = `
+    <div class="upcoming-head">
+      <div>
+        <p>Agenda rápida</p>
+        <h2>Próximos jogos</h2>
+      </div>
+      <button class="generate-art" type="button" data-upcoming-art ${games.length ? "" : "disabled"}>
+        <i data-lucide="wand-sparkles"></i>
+        <span>Post próximos 4</span>
+      </button>
+    </div>
+    <div class="upcoming-list">
+      ${games.length ? games.map(renderUpcomingItem).join("") : `<div class="upcoming-empty">Não há próximos jogos pendentes.</div>`}
+    </div>
+  `;
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderUpcomingItem(item) {
+  return `
+    <article class="upcoming-item">
+      <div>
+        <span>${escapeHtml(`${shortDate(item.date)} ${item.time}`)}</span>
+        <h3>${escapeHtml(item.modality)}</h3>
+        <p>${escapeHtml(matchTitle(item))}</p>
+      </div>
+      <button class="secondary-button slim" type="button" data-open-upcoming-game="${escapeHtml(item.id)}">
+        <i data-lucide="external-link"></i>
+        <span>Abrir</span>
+      </button>
+    </article>
+  `;
 }
 
 function renderNotification(notification) {
@@ -1349,6 +1474,28 @@ async function openBracketArt(bracketId) {
   if (window.lucide) lucide.createIcons();
 }
 
+async function openUpcomingArt() {
+  const games = upcomingGames(4);
+  if (!games.length) {
+    showToast("Não encontrei próximos jogos pendentes.");
+    return;
+  }
+
+  els.storyModal.hidden = false;
+  els.storyTitle.textContent = "Arte de próximos jogos";
+  els.downloadStory.disabled = true;
+  els.shareStory.disabled = true;
+  currentStory = {
+    blob: null,
+    fileName: "proximos-jogos-jcm.png",
+    title: "Próximos jogos - JCM",
+    linkToCopy: ""
+  };
+
+  await drawUpcomingStory(games);
+  if (window.lucide) lucide.createIcons();
+}
+
 async function drawStory(type, item, data) {
   const canvas = els.storyCanvas;
   const ctx = canvas.getContext("2d");
@@ -1445,6 +1592,80 @@ async function drawBracketStory(bracket) {
   currentStory.blob = await canvasToBlob(canvas);
   els.downloadStory.disabled = false;
   els.shareStory.disabled = false;
+}
+
+async function drawUpcomingStory(games) {
+  const canvas = els.storyCanvas;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+
+  await drawStoryBackground(ctx, [STORY_BACKGROUNDS.upcoming, STORY_BACKGROUNDS.photos, STORY_BACKGROUNDS.fallback]);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+  ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+
+  drawPositionedText(ctx, "PRÓXIMOS JOGOS", STORY_WIDTH / 2, 390, 72, 900);
+  drawPositionedText(ctx, "COBERTURA JCM", STORY_WIDTH / 2, 465, 34, 700, {
+    color: "rgba(255,255,255,0.62)",
+    weight: 850
+  });
+
+  const firstDate = games[0]?.date ? shortDate(games[0].date) : "";
+  if (firstDate) {
+    drawPositionedText(ctx, firstDate, STORY_WIDTH / 2, 530, 40, 320, { color: "#ffffff" });
+  }
+
+  const startY = 685;
+  const gap = 245;
+  for (let index = 0; index < games.length; index += 1) {
+    await drawUpcomingStoryGame(ctx, games[index], startY + index * gap);
+  }
+
+  currentStory.blob = await canvasToBlob(canvas);
+  els.downloadStory.disabled = false;
+  els.shareStory.disabled = false;
+}
+
+async function drawUpcomingStoryGame(ctx, item, y) {
+  const x = STORY_WIDTH / 2;
+  const width = 890;
+  const height = 190;
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.strokeStyle = "rgba(255,255,255,0.16)";
+  ctx.lineWidth = 2;
+  roundRect(ctx, x - width / 2, y - height / 2, width, height, 26);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  drawPositionedText(ctx, `${shortDate(item.date)} • ${item.time}`, x, y - 58, 28, 360, {
+    color: "rgba(255,255,255,0.72)",
+    weight: 850
+  });
+  drawPositionedText(ctx, item.modality.toUpperCase(), x, y - 20, 34, 640);
+
+  const logoY = y + 48;
+  await drawSmallStoryLogo(ctx, item.teamA, x - 250, logoY);
+  drawPositionedText(ctx, "X", x, logoY, 42, 80);
+  await drawSmallStoryLogo(ctx, item.teamB, x + 250, logoY);
+}
+
+async function drawSmallStoryLogo(ctx, teamName, x, y) {
+  const logo = teamLogoCandidates(teamName);
+  if (logo) {
+    try {
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.36)";
+      ctx.shadowBlur = 14;
+      ctx.shadowOffsetY = 6;
+      drawContainedImage(ctx, await loadImage(logo), x, y, 118, 118);
+      ctx.restore();
+      return;
+    } catch {
+      // Fall back to text below.
+    }
+  }
+  drawPositionedText(ctx, teamInitials(teamName), x, y, 44, 120);
 }
 
 async function drawStoryBackground(ctx, candidates) {
@@ -1706,6 +1927,7 @@ function bindEvents() {
   });
 
   els.bracketFilter?.addEventListener("change", renderBrackets);
+  els.progressFilter?.addEventListener("change", renderProgressBoard);
 
   els.bracketsBoard?.addEventListener("click", (event) => {
     const open = event.target.closest("[data-open-bracket-game]");
@@ -1716,6 +1938,23 @@ function bindEvents() {
     }
     if (!open) return;
     openBracketGame(open.dataset.openBracketGame);
+  });
+
+  els.progressBoard?.addEventListener("click", (event) => {
+    const open = event.target.closest("[data-open-progress-game]");
+    if (!open) return;
+    openBracketGame(open.dataset.openProgressGame);
+  });
+
+  els.upcomingPanel?.addEventListener("click", (event) => {
+    const art = event.target.closest("[data-upcoming-art]");
+    const open = event.target.closest("[data-open-upcoming-game]");
+    if (art) {
+      openUpcomingArt().catch(() => showToast("Não consegui gerar o post dos próximos jogos."));
+      return;
+    }
+    if (!open) return;
+    openBracketGame(open.dataset.openUpcomingGame);
   });
 
   els.dateFilter.addEventListener("change", () => {

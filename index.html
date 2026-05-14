@@ -41,6 +41,10 @@
           <i data-lucide="git-branch"></i>
           <span>Chaveamento</span>
         </button>
+        <button class="view-tab" type="button" data-view="progress">
+          <i data-lucide="activity"></i>
+          <span>Progresso</span>
+        </button>
       </section>
 
       <section class="picker" aria-label="Selecionar partida">
@@ -86,6 +90,8 @@
 
       <section id="matchCard" class="match-card" aria-live="polite"></section>
 
+      <section id="upcomingPanel" class="upcoming-panel" aria-live="polite"></section>
+
       <section id="bracketsView" class="view-panel" hidden>
         <section class="bracket-toolbar" aria-label="Filtrar chaveamento">
           <div>
@@ -99,6 +105,27 @@
         </section>
 
         <section id="bracketsBoard" class="brackets-board" aria-live="polite"></section>
+      </section>
+
+      <section id="progressView" class="view-panel" hidden>
+        <section class="progress-toolbar" aria-label="Resumo de progresso">
+          <div>
+            <p>Painel geral</p>
+            <h2>Progresso das partidas</h2>
+          </div>
+          <label>
+            <span>Status</span>
+            <select id="progressFilter">
+              <option value="all">Todos os jogos</option>
+              <option value="pending">Pendentes</option>
+              <option value="active">Em cobertura</option>
+              <option value="ended">Fim de jogo</option>
+              <option value="finalized">Finalizadas</option>
+            </select>
+          </label>
+        </section>
+
+        <section id="progressBoard" class="progress-board" aria-live="polite"></section>
       </section>
     </main>
 

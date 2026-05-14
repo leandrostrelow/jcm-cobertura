@@ -412,6 +412,13 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.12);
 }
 
+#gamePicker.finalized-picker {
+  border-color: #86efac;
+  background: var(--soft-green);
+  color: var(--green);
+  font-weight: 850;
+}
+
 .match-card {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -427,6 +434,11 @@ select:focus {
   align-items: start;
   padding: 20px clamp(16px, 3vw, 34px) 22px;
   border-bottom: 1px solid var(--line);
+}
+
+.match-top.finalized-top {
+  background: linear-gradient(90deg, rgba(236, 253, 245, 0.92), #fff 42%);
+  border-bottom-color: #a7f3d0;
 }
 
 .match-meta {
@@ -1101,6 +1113,203 @@ select:focus {
   padding: 10px;
 }
 
+.upcoming-panel,
+.progress-toolbar {
+  display: grid;
+  gap: 14px;
+  margin: 14px auto 0;
+  max-width: 1480px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.upcoming-head,
+.progress-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.upcoming-head p,
+.progress-toolbar p {
+  margin: 0 0 3px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.upcoming-head h2,
+.progress-toolbar h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.upcoming-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.upcoming-item,
+.upcoming-empty,
+.progress-card,
+.progress-empty {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.upcoming-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.upcoming-item span,
+.progress-card span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.upcoming-item h3,
+.upcoming-item p,
+.progress-card h3,
+.progress-card p {
+  margin: 0;
+}
+
+.upcoming-item h3 {
+  margin-top: 3px;
+  color: var(--blue);
+  font-size: 0.9rem;
+}
+
+.upcoming-item p {
+  margin-top: 2px;
+  font-size: 0.88rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.upcoming-empty,
+.progress-empty {
+  color: var(--muted);
+  font-weight: 850;
+  padding: 14px;
+}
+
+.progress-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 300px);
+  margin-top: 0;
+}
+
+.progress-board {
+  display: grid;
+  gap: 12px;
+}
+
+.progress-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.progress-summary > div {
+  display: grid;
+  gap: 3px;
+  min-height: 72px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 12px;
+}
+
+.progress-summary strong {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.progress-summary span {
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.progress-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: 10px;
+}
+
+.progress-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.progress-card.finalized {
+  border-color: #a7f3d0;
+  background: var(--soft-green);
+}
+
+.progress-card.ended {
+  border-color: #ddd6fe;
+  background: #fbf7ff;
+}
+
+.progress-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.progress-card h3 {
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+
+.progress-card p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.progress-meter {
+  height: 8px;
+  border-radius: 999px;
+  background: #eeeeee;
+  overflow: hidden;
+}
+
+.progress-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue);
+}
+
+.progress-card.finalized .progress-meter span {
+  background: var(--green);
+}
+
+.progress-card footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .toast {
   position: fixed;
   right: 18px;
@@ -1223,6 +1432,11 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 
+  .upcoming-list,
+  .progress-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .bracket-columns {
     grid-template-columns: 1fr;
   }
@@ -1302,6 +1516,17 @@ button:disabled {
 
   .bracket-card-head {
     flex-direction: column;
+  }
+
+  .upcoming-head,
+  .progress-toolbar {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .upcoming-list,
+  .progress-summary {
+    grid-template-columns: 1fr;
   }
 
   .match-top {
