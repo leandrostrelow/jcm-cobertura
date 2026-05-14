@@ -30,6 +30,7 @@ const BRACKET_DEFINITIONS = [
   { id: "basquete-masculino", title: "Basquete Masculino", qf1: "JCM-017", qf2: "JCM-027", sf1: "JCM-034", sf2: "JCM-035", final: "JCM-045" },
   { id: "basquete-feminino", title: "Basquete Feminino", qf1: "JCM-016", qf2: "", sf1: "JCM-033", sf2: "JCM-026", final: "JCM-043" },
   { id: "cabo-de-guerra-masculino", title: "Cabo de Guerra Masculino", qf1: "JCM-056", qf2: "JCM-057", sf1: "JCM-058", sf2: "JCM-059", final: "JCM-060" },
+  { id: "cabo-de-guerra-feminino", title: "Cabo de Guerra Feminino", qf1: "JCM-061", qf2: "JCM-062", sf1: "JCM-063", sf2: "JCM-064", final: "JCM-065" },
   { id: "futebol-masculino", title: "Futebol de Campo", qf1: "JCM-015", qf2: "JCM-014", sf1: "JCM-037", sf2: "JCM-036", final: "JCM-038" },
   { id: "volei-masculino", title: "Volei Masculino", qf1: "JCM-011", qf2: "JCM-010", sf1: "JCM-023", sf2: "JCM-022", final: "JCM-041" },
   { id: "volei-feminino", title: "Volei Feminino", qf1: "JCM-007", qf2: "JCM-008", sf1: "JCM-024", sf2: "JCM-025", final: "JCM-039" }
