@@ -1760,17 +1760,6 @@ async function drawUpcomingStory(batch) {
 
 async function drawUpcomingStoryGame(ctx, item, y) {
   const x = STORY_WIDTH / 2;
-  const width = 990;
-  const height = 225;
-  ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.08)";
-  ctx.strokeStyle = "rgba(255,255,255,0.16)";
-  ctx.lineWidth = 2;
-  roundRect(ctx, x - width / 2, y - height / 2, width, height, 26);
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-
   drawPositionedText(ctx, item.time, x, y - 55, 30, 260, {
     color: "rgba(255,255,255,0.72)",
     weight: 850
