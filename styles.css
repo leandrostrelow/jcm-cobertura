@@ -1199,6 +1199,14 @@ select:focus {
   line-height: 1.2;
 }
 
+.upcoming-item small {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
 .upcoming-empty,
 .progress-empty {
   color: var(--muted);

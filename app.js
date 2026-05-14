@@ -64,13 +64,14 @@ const saveTimers = {};
 
 const els = {
   viewTabs: document.querySelector(".view-tabs"),
-  coveragePanels: document.querySelectorAll(".picker, #notificationCenter, #matchCard, #upcomingPanel"),
+  coveragePanels: document.querySelectorAll(".picker, #notificationCenter, #matchCard"),
   bracketsView: document.querySelector("#bracketsView"),
   bracketsBoard: document.querySelector("#bracketsBoard"),
   bracketFilter: document.querySelector("#bracketFilter"),
   progressView: document.querySelector("#progressView"),
   progressBoard: document.querySelector("#progressBoard"),
   progressFilter: document.querySelector("#progressFilter"),
+  upcomingView: document.querySelector("#upcomingView"),
   upcomingPanel: document.querySelector("#upcomingPanel"),
   dateFilter: document.querySelector("#dateFilter"),
   gamePicker: document.querySelector("#gamePicker"),
@@ -854,17 +855,19 @@ function renderNotifications() {
 }
 
 function switchView(view) {
-  activeView = ["brackets", "progress"].includes(view) ? view : "coverage";
+  activeView = ["brackets", "progress", "upcoming"].includes(view) ? view : "coverage";
   els.coveragePanels.forEach((panel) => {
     panel.hidden = activeView !== "coverage";
   });
   if (els.bracketsView) els.bracketsView.hidden = activeView !== "brackets";
   if (els.progressView) els.progressView.hidden = activeView !== "progress";
+  if (els.upcomingView) els.upcomingView.hidden = activeView !== "upcoming";
   document.querySelectorAll(".view-tab").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === activeView);
   });
   if (activeView === "brackets") renderBrackets();
   if (activeView === "progress") renderProgressBoard();
+  if (activeView === "upcoming") renderUpcomingPanel();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -1092,6 +1095,7 @@ function renderUpcomingItem(item) {
         <span>${escapeHtml(`${shortDate(item.date)} ${item.time}`)}</span>
         <h3>${escapeHtml(item.modality)}</h3>
         <p>${escapeHtml(matchTitle(item))}</p>
+        <small>${escapeHtml(item.venue)}</small>
       </div>
       <button class="secondary-button slim" type="button" data-open-upcoming-game="${escapeHtml(item.id)}">
         <i data-lucide="external-link"></i>
@@ -1642,12 +1646,16 @@ async function drawUpcomingStoryGame(ctx, item, y) {
     color: "rgba(255,255,255,0.72)",
     weight: 850
   });
-  drawPositionedText(ctx, item.modality.toUpperCase(), x, y - 20, 34, 640);
+  drawPositionedText(ctx, item.modality.toUpperCase(), x, y - 24, 34, 640);
+  drawPositionedText(ctx, item.venue.toUpperCase(), x, y + 12, 22, 620, {
+    color: "rgba(255,255,255,0.58)",
+    weight: 850
+  });
 
-  const logoY = y + 48;
-  await drawSmallStoryLogo(ctx, item.teamA, x - 250, logoY);
-  drawPositionedText(ctx, "X", x, logoY, 42, 80);
-  await drawSmallStoryLogo(ctx, item.teamB, x + 250, logoY);
+  const logoY = y + 60;
+  await drawSmallStoryLogo(ctx, item.teamA, x - 235, logoY);
+  drawPositionedText(ctx, "X", x, logoY, 38, 80);
+  await drawSmallStoryLogo(ctx, item.teamB, x + 235, logoY);
 }
 
 async function drawSmallStoryLogo(ctx, teamName, x, y) {
@@ -1658,7 +1666,7 @@ async function drawSmallStoryLogo(ctx, teamName, x, y) {
       ctx.shadowColor = "rgba(0,0,0,0.36)";
       ctx.shadowBlur = 14;
       ctx.shadowOffsetY = 6;
-      drawContainedImage(ctx, await loadImage(logo), x, y, 118, 118);
+      drawContainedImage(ctx, await loadImage(logo), x, y, 108, 108);
       ctx.restore();
       return;
     } catch {

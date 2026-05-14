@@ -45,6 +45,10 @@
           <i data-lucide="activity"></i>
           <span>Progresso</span>
         </button>
+        <button class="view-tab" type="button" data-view="upcoming">
+          <i data-lucide="calendar-days"></i>
+          <span>Agenda rápida</span>
+        </button>
       </section>
 
       <section class="picker" aria-label="Selecionar partida">
@@ -89,9 +93,6 @@
       </section>
 
       <section id="matchCard" class="match-card" aria-live="polite"></section>
-
-      <section id="upcomingPanel" class="upcoming-panel" aria-live="polite"></section>
-
       <section id="bracketsView" class="view-panel" hidden>
         <section class="bracket-toolbar" aria-label="Filtrar chaveamento">
           <div>
@@ -126,6 +127,10 @@
         </section>
 
         <section id="progressBoard" class="progress-board" aria-live="polite"></section>
+      </section>
+
+      <section id="upcomingView" class="view-panel" hidden>
+        <section id="upcomingPanel" class="upcoming-panel" aria-live="polite"></section>
       </section>
     </main>
 
