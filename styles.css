@@ -234,6 +234,83 @@ h1 {
   display: none !important;
 }
 
+.public-bracket-page {
+  background: #f5f4f7;
+}
+
+.public-bracket-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.public-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 auto;
+  width: min(1480px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.public-hero p {
+  margin: 0 0 3px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.public-hero h2 {
+  margin: 0;
+  font-size: clamp(1.15rem, 2vw, 1.7rem);
+}
+
+.public-bracket-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 auto;
+  width: min(1480px, 100%);
+}
+
+.public-bracket-filters button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  padding: 0 14px;
+  font-weight: 900;
+}
+
+.public-bracket-filters button.active {
+  border-color: #ddd6fe;
+  background: var(--soft-blue);
+  color: var(--blue);
+}
+
+.public-brackets-board {
+  margin-top: 0;
+}
+
+.public-bracket-card .bracket-card-head > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border-radius: 999px;
+  background: var(--soft-blue);
+  color: var(--blue);
+  padding: 0 10px;
+  font-size: 0.8rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
 .picker {
   display: grid;
   grid-template-columns: minmax(150px, 0.42fr) minmax(260px, 1.45fr) auto;
@@ -1873,6 +1950,11 @@ button:disabled {
   }
 
   .bracket-card-head {
+    flex-direction: column;
+  }
+
+  .public-hero {
+    align-items: stretch;
     flex-direction: column;
   }
 

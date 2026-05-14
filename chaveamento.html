@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JCM | Chaveamento ao vivo</title>
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body class="public-bracket-page">
+    <header class="topbar">
+      <div class="topbar-content">
+        <div class="lotus-mark" aria-label="Lotus Formaturas">
+          <img src="lotus-logo.png" alt="Lotus Formaturas" onerror="this.parentElement.remove()">
+        </div>
+        <div class="brand">
+          <div class="brand-mark">
+            <span>JCM</span>
+            <img src="jcm-logo.png" alt="JCM" onload="this.previousElementSibling.hidden = true" onerror="this.remove()">
+          </div>
+          <div>
+            <p>Jogos Capixaba de Medicina</p>
+            <h1>Chaveamento ao vivo</h1>
+          </div>
+        </div>
+        <div id="publicSyncStatus" class="sync-status">Conectando...</div>
+      </div>
+    </header>
+
+    <main class="app-shell public-bracket-shell">
+      <section class="public-hero">
+        <div>
+          <p>Visualização pública</p>
+          <h2>Mata-matas atualizados pela cobertura</h2>
+        </div>
+        <button id="refreshBrackets" class="secondary-button" type="button">
+          <i data-lucide="refresh-cw"></i>
+          <span>Atualizar</span>
+        </button>
+      </section>
+
+      <section id="publicBracketFilters" class="public-bracket-filters" aria-label="Filtrar chaveamento"></section>
+      <section id="publicBracketsBoard" class="brackets-board public-brackets-board" aria-live="polite"></section>
+    </main>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="data/schedule-data.js"></script>
+    <script src="chaveamento-publico.js"></script>
+  </body>
+</html>
