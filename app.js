@@ -150,6 +150,7 @@ function defaultRecord() {
     editingDone: false,
     reviewDone: false,
     editedPhotosDone: false,
+    upcomingPostDone: false,
     originalPhotosUrl: "",
     startArtUrl: "",
     resultArtUrl: "",
@@ -164,6 +165,7 @@ function defaultRecord() {
 
 function record(id) {
   state[id] ||= defaultRecord();
+  state[id] = { ...defaultRecord(), ...state[id] };
   if (!Array.isArray(state[id].photographers)) {
     state[id].photographers = [];
   }
@@ -265,6 +267,7 @@ function rowToRecord(row) {
   const editingDone = bool(row["Edição feita"]) || finalizada;
   const reviewDone = bool(row["Conferência feita"]) || finalizada;
   const editedPhotosDone = bool(row["Fotos editadas feitas"]) || finalizada;
+  const upcomingPostDone = bool(row["Post agenda feito"]);
 
   const photographers = [
     photographerFromRow(row, 1),
@@ -287,6 +290,7 @@ function rowToRecord(row) {
     editingDone,
     reviewDone,
     editedPhotosDone,
+    upcomingPostDone,
     originalPhotosUrl: normalizeText(row["Link fotos originais"]),
     startArtUrl: normalizeText(row["Link arte post início"]),
     resultArtUrl: normalizeText(row["Link arte post resultado"]),
@@ -371,6 +375,7 @@ function recordToSheetData(id) {
     "Conferência feita": data.reviewDone,
     "Link fotos editadas": data.editedPhotosUrl,
     "Fotos editadas feitas": data.editedPhotosDone,
+    "Post agenda feito": data.upcomingPostDone,
     "Link live ao vivo": data.liveUrl,
     "Finalizada": finalized
   };
@@ -398,6 +403,44 @@ function upcomingGames(count = 4, fromId = selectedId) {
   const currentIndex = games.findIndex((item) => item.id === fromId);
   const startIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
   return games.slice(startIndex).filter((item) => !isFinalized(item)).slice(0, count).map(resolveItemTeams);
+}
+
+function agendaPostBatches() {
+  const dateGroups = new Map();
+  gameItems().map(resolveItemTeams).forEach((item) => {
+    const key = item.date || "Sem data";
+    if (!dateGroups.has(key)) dateGroups.set(key, []);
+    dateGroups.get(key).push(item);
+  });
+
+  const batches = [];
+  dateGroups.forEach((items, date) => {
+    const totalChunks = Math.ceil(items.length / 4);
+    for (let index = 0; index < totalChunks; index += 1) {
+      const games = items.slice(index * 4, index * 4 + 4);
+      const first = games[0] || {};
+      batches.push({
+        id: `agenda-${slugify(date)}-${index + 1}`,
+        date,
+        label: `${weekdayShort(first.weekday)} - ${shortDate(date)}`,
+        chunkLabel: totalChunks > 1 ? `${index + 1}/${totalChunks}` : "",
+        games
+      });
+    }
+  });
+  return batches;
+}
+
+function agendaBatchById(id) {
+  return agendaPostBatches().find((batch) => batch.id === id);
+}
+
+function agendaBatchPosted(batch) {
+  return batch.games.length > 0 && batch.games.every((item) => record(item.id).upcomingPostDone);
+}
+
+function weekdayShort(weekday) {
+  return normalizeText(weekday).replace(/-feira/i, "");
 }
 
 function getItemById(id) {
@@ -1069,40 +1112,70 @@ function renderProgressCard(item) {
 
 function renderUpcomingPanel() {
   if (!els.upcomingPanel) return;
-  const games = upcomingGames(4);
+  const batches = agendaPostBatches();
   els.upcomingPanel.innerHTML = `
     <div class="upcoming-head">
       <div>
         <p>Agenda rápida</p>
-        <h2>Próximos jogos</h2>
+        <h2>Postagens de próximos jogos</h2>
       </div>
-      <button class="generate-art" type="button" data-upcoming-art ${games.length ? "" : "disabled"}>
-        <i data-lucide="wand-sparkles"></i>
-        <span>Post próximos 4</span>
-      </button>
+      <span class="upcoming-total">${batches.length} artes planejadas</span>
     </div>
     <div class="upcoming-list">
-      ${games.length ? games.map(renderUpcomingItem).join("") : `<div class="upcoming-empty">Não há próximos jogos pendentes.</div>`}
+      ${batches.length ? batches.map(renderUpcomingBatch).join("") : `<div class="upcoming-empty">Não há jogos para montar agenda.</div>`}
     </div>
   `;
   if (window.lucide) lucide.createIcons();
 }
 
-function renderUpcomingItem(item) {
+function renderUpcomingBatch(batch) {
+  const done = agendaBatchPosted(batch);
   return `
-    <article class="upcoming-item">
-      <div>
-        <span>${escapeHtml(`${shortDate(item.date)} ${item.time}`)}</span>
-        <h3>${escapeHtml(item.modality)}</h3>
-        <p>${escapeHtml(matchTitle(item))}</p>
-        <small>${escapeHtml(item.venue)}</small>
+    <article class="upcoming-batch ${done ? "done" : ""}">
+      <header>
+        <div>
+          <span>${escapeHtml(batch.label)}${batch.chunkLabel ? ` • Arte ${escapeHtml(batch.chunkLabel)}` : ""}</span>
+          <h3>${batch.games.length} ${batch.games.length === 1 ? "jogo" : "jogos"}</h3>
+        </div>
+        <button class="icon-action ${done ? "done" : ""}" type="button" data-toggle-upcoming-posted="${escapeHtml(batch.id)}">
+          <i data-lucide="check-circle-2"></i>
+          <span>${done ? "Postado" : "Marcar postado"}</span>
+        </button>
+      </header>
+      <div class="upcoming-batch-games">
+        ${batch.games.map(renderUpcomingGameRow).join("")}
       </div>
-      <button class="secondary-button slim" type="button" data-open-upcoming-game="${escapeHtml(item.id)}">
-        <i data-lucide="external-link"></i>
-        <span>Abrir</span>
-      </button>
+      <footer>
+        <button class="generate-art" type="button" data-upcoming-art="${escapeHtml(batch.id)}">
+          <i data-lucide="wand-sparkles"></i>
+          <span>Gerar arte</span>
+        </button>
+      </footer>
     </article>
   `;
+}
+
+function renderUpcomingGameRow(item) {
+  return `
+    <button class="upcoming-game-row" type="button" data-open-upcoming-game="${escapeHtml(item.id)}">
+      <span>${escapeHtml(item.time)}</span>
+      <strong>${escapeHtml(item.modality)}</strong>
+      <small>${escapeHtml(item.venue)}</small>
+    </button>
+  `;
+}
+
+function toggleAgendaBatchPosted(batchId) {
+  const batch = agendaBatchById(batchId);
+  if (!batch) return;
+  const nextValue = !agendaBatchPosted(batch);
+  batch.games.forEach((item) => {
+    record(item.id).upcomingPostDone = nextValue;
+    queueSave(item.id, true);
+  });
+  saveState();
+  renderUpcomingPanel();
+  showToast(nextValue ? "Postagem marcada como feita." : "Postagem marcada como pendente.");
 }
 
 function renderNotification(notification) {
@@ -1284,10 +1357,73 @@ function drawFallbackBackground(ctx) {
 }
 
 function drawContainedImage(ctx, image, centerX, centerY, maxWidth, maxHeight) {
-  const scale = Math.min(maxWidth / image.width, maxHeight / image.height);
-  const width = image.width * scale;
-  const height = image.height * scale;
-  ctx.drawImage(image, centerX - width / 2, centerY - height / 2, width, height);
+  const bounds = visibleImageBounds(image);
+  const scale = Math.min(maxWidth / bounds.width, maxHeight / bounds.height);
+  const width = bounds.width * scale;
+  const height = bounds.height * scale;
+  ctx.drawImage(
+    image,
+    bounds.x,
+    bounds.y,
+    bounds.width,
+    bounds.height,
+    centerX - width / 2,
+    centerY - height / 2,
+    width,
+    height
+  );
+}
+
+function visibleImageBounds(image) {
+  const cache = visibleImageBounds.cache || (visibleImageBounds.cache = new WeakMap());
+  if (cache.has(image)) return cache.get(image);
+
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  const fallback = { x: 0, y: 0, width, height };
+
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(image, 0, 0, width, height);
+    const pixels = ctx.getImageData(0, 0, width, height).data;
+    let minX = width;
+    let minY = height;
+    let maxX = 0;
+    let maxY = 0;
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        if (pixels[(y * width + x) * 4 + 3] <= 12) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+
+    if (minX > maxX || minY > maxY) {
+      cache.set(image, fallback);
+      return fallback;
+    }
+
+    const padding = 4;
+    const sourceX = Math.max(0, minX - padding);
+    const sourceY = Math.max(0, minY - padding);
+    const bounds = {
+      x: sourceX,
+      y: sourceY,
+      width: Math.min(width - sourceX, maxX - minX + 1 + padding * 2),
+      height: Math.min(height - sourceY, maxY - minY + 1 + padding * 2)
+    };
+    cache.set(image, bounds);
+    return bounds;
+  } catch {
+    cache.set(image, fallback);
+    return fallback;
+  }
 }
 
 function drawStoryText(ctx, text, y, size, maxWidth) {
@@ -1478,10 +1614,10 @@ async function openBracketArt(bracketId) {
   if (window.lucide) lucide.createIcons();
 }
 
-async function openUpcomingArt() {
-  const games = upcomingGames(4);
-  if (!games.length) {
-    showToast("Não encontrei próximos jogos pendentes.");
+async function openUpcomingArt(batchId) {
+  const batch = agendaBatchById(batchId);
+  if (!batch || !batch.games.length) {
+    showToast("Não encontrei jogos para essa arte.");
     return;
   }
 
@@ -1491,12 +1627,12 @@ async function openUpcomingArt() {
   els.shareStory.disabled = true;
   currentStory = {
     blob: null,
-    fileName: "proximos-jogos-jcm.png",
-    title: "Próximos jogos - JCM",
+    fileName: `${slugify(`proximos-jogos-${batch.label}-${batch.chunkLabel || "1"}`)}.png`,
+    title: `Próximos jogos - ${batch.label}`,
     linkToCopy: ""
   };
 
-  await drawUpcomingStory(games);
+  await drawUpcomingStory(batch);
   if (window.lucide) lucide.createIcons();
 }
 
@@ -1598,7 +1734,8 @@ async function drawBracketStory(bracket) {
   els.shareStory.disabled = false;
 }
 
-async function drawUpcomingStory(games) {
+async function drawUpcomingStory(batch) {
+  const games = batch.games;
   const canvas = els.storyCanvas;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
@@ -1607,19 +1744,11 @@ async function drawUpcomingStory(games) {
   ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
   ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
 
-  drawPositionedText(ctx, "PRÓXIMOS JOGOS", STORY_WIDTH / 2, 390, 72, 900);
-  drawPositionedText(ctx, "COBERTURA JCM", STORY_WIDTH / 2, 465, 34, 700, {
-    color: "rgba(255,255,255,0.62)",
-    weight: 850
-  });
+  drawPositionedText(ctx, "PRÓXIMOS JOGOS", STORY_WIDTH / 2, 440, 72, 900);
+  drawPositionedText(ctx, batch.label.toUpperCase(), STORY_WIDTH / 2, 535, 42, 520, { color: "#ffffff" });
 
-  const firstDate = games[0]?.date ? shortDate(games[0].date) : "";
-  if (firstDate) {
-    drawPositionedText(ctx, firstDate, STORY_WIDTH / 2, 530, 40, 320, { color: "#ffffff" });
-  }
-
-  const startY = 685;
-  const gap = 245;
+  const gap = games.length <= 2 ? 260 : 235;
+  const startY = games.length <= 2 ? 800 : games.length === 3 ? 735 : 685;
   for (let index = 0; index < games.length; index += 1) {
     await drawUpcomingStoryGame(ctx, games[index], startY + index * gap);
   }
@@ -1631,8 +1760,8 @@ async function drawUpcomingStory(games) {
 
 async function drawUpcomingStoryGame(ctx, item, y) {
   const x = STORY_WIDTH / 2;
-  const width = 890;
-  const height = 190;
+  const width = 990;
+  const height = 225;
   ctx.save();
   ctx.fillStyle = "rgba(255,255,255,0.08)";
   ctx.strokeStyle = "rgba(255,255,255,0.16)";
@@ -1642,20 +1771,20 @@ async function drawUpcomingStoryGame(ctx, item, y) {
   ctx.stroke();
   ctx.restore();
 
-  drawPositionedText(ctx, `${shortDate(item.date)} • ${item.time}`, x, y - 58, 28, 360, {
+  drawPositionedText(ctx, item.time, x, y - 55, 30, 260, {
     color: "rgba(255,255,255,0.72)",
     weight: 850
   });
-  drawPositionedText(ctx, item.modality.toUpperCase(), x, y - 24, 34, 640);
-  drawPositionedText(ctx, item.venue.toUpperCase(), x, y + 12, 22, 620, {
+  drawPositionedText(ctx, item.modality.toUpperCase(), x, y - 18, 34, 430);
+  drawPositionedText(ctx, item.venue.toUpperCase(), x, y + 19, 22, 420, {
     color: "rgba(255,255,255,0.58)",
     weight: 850
   });
 
-  const logoY = y + 60;
-  await drawSmallStoryLogo(ctx, item.teamA, x - 235, logoY);
-  drawPositionedText(ctx, "X", x, logoY, 38, 80);
-  await drawSmallStoryLogo(ctx, item.teamB, x + 235, logoY);
+  const logoY = y + 20;
+  await drawSmallStoryLogo(ctx, item.teamA, x - 360, logoY);
+  drawPositionedText(ctx, "X", x, y + 68, 38, 80);
+  await drawSmallStoryLogo(ctx, item.teamB, x + 360, logoY);
 }
 
 async function drawSmallStoryLogo(ctx, teamName, x, y) {
@@ -1666,7 +1795,7 @@ async function drawSmallStoryLogo(ctx, teamName, x, y) {
       ctx.shadowColor = "rgba(0,0,0,0.36)";
       ctx.shadowBlur = 14;
       ctx.shadowOffsetY = 6;
-      drawContainedImage(ctx, await loadImage(logo), x, y, 108, 108);
+      drawContainedImage(ctx, await loadImage(logo), x, y, 320, 190);
       ctx.restore();
       return;
     } catch {
@@ -1956,9 +2085,14 @@ function bindEvents() {
 
   els.upcomingPanel?.addEventListener("click", (event) => {
     const art = event.target.closest("[data-upcoming-art]");
+    const toggle = event.target.closest("[data-toggle-upcoming-posted]");
     const open = event.target.closest("[data-open-upcoming-game]");
     if (art) {
-      openUpcomingArt().catch(() => showToast("Não consegui gerar o post dos próximos jogos."));
+      openUpcomingArt(art.dataset.upcomingArt).catch(() => showToast("Não consegui gerar o post dos próximos jogos."));
+      return;
+    }
+    if (toggle) {
+      toggleAgendaBatchPosted(toggle.dataset.toggleUpcomingPosted);
       return;
     }
     if (!open) return;
