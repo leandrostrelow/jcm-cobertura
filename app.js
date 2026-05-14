@@ -1433,7 +1433,7 @@ function renderYoutubePanel() {
         <span>selecionados para a capa</span>
       </div>
     </div>
-    <div class="youtube-hint">Ideal para capa: 2 a 4 jogos. O fundo pode ficar na raiz com o nome <strong>youtube-cover-background.png</strong>.</div>
+    <div class="youtube-hint">Ideal para capa: 2 a 5 jogos. O fundo pode ficar na raiz com o nome <strong>youtube-cover-background.png</strong>.</div>
     <div class="youtube-days">
       ${groups.length ? groups.map(renderYoutubeDay).join("") : `<div class="upcoming-empty">Não há jogos para selecionar.</div>`}
     </div>
@@ -1485,8 +1485,8 @@ function renderYoutubeGameCard(item) {
 }
 
 function toggleYoutubeGame(id, checked) {
-  if (checked && youtubeSelectedIds.length >= 4 && !youtubeSelectedIds.includes(id)) {
-    showToast("Para manter a capa limpa, use no máximo 4 jogos.");
+  if (checked && youtubeSelectedIds.length >= 5 && !youtubeSelectedIds.includes(id)) {
+    showToast("Para manter a capa limpa, use no máximo 5 jogos.");
     renderYoutubePanel();
     return;
   }
@@ -1499,10 +1499,10 @@ function toggleYoutubeGame(id, checked) {
 
 function selectVisibleYoutubeDay() {
   const visibleIds = youtubeItemsByDate().flatMap((group) => group.items.map((item) => item.id));
-  youtubeSelectedIds = visibleIds.slice(0, 4);
+  youtubeSelectedIds = visibleIds.slice(0, 5);
   saveYoutubeSelection();
   renderYoutubePanel();
-  showToast("Selecionei os primeiros 4 itens visíveis para a capa.");
+  showToast("Selecionei os primeiros 5 itens visíveis para a capa.");
 }
 
 function toggleAgendaBatchPosted(batchId) {
@@ -1993,8 +1993,8 @@ async function openYoutubeCoverArt() {
     showToast("Selecione pelo menos um jogo para montar a capa.");
     return;
   }
-  if (items.length > 4) {
-    showToast("Para a capa ficar limpa, selecione no máximo 4 jogos.");
+  if (items.length > 5) {
+    showToast("Para a capa ficar limpa, selecione no máximo 5 jogos.");
     return;
   }
 
@@ -2182,29 +2182,55 @@ async function drawYoutubeCover(items) {
   ctx.clearRect(0, 0, YOUTUBE_WIDTH, YOUTUBE_HEIGHT);
 
   await drawStoryBackground(ctx, [STORY_BACKGROUNDS.youtube, STORY_BACKGROUNDS.upcoming, STORY_BACKGROUNDS.fallback]);
-  const leftGradient = ctx.createLinearGradient(0, 0, 820, 0);
-  leftGradient.addColorStop(0, "rgba(0,0,0,0.60)");
-  leftGradient.addColorStop(1, "rgba(0,0,0,0.10)");
-  ctx.fillStyle = leftGradient;
-  ctx.fillRect(0, 0, 850, YOUTUBE_HEIGHT);
-  ctx.fillStyle = "rgba(0,0,0,0.12)";
-  ctx.fillRect(760, 0, YOUTUBE_WIDTH - 760, YOUTUBE_HEIGHT);
+  const layout = youtubeCoverLayout(items.length);
 
-  drawPositionedText(ctx, youtubeCoverLabel(items).toUpperCase(), 1325, 82, 44, 760, {
+  drawPositionedText(ctx, youtubeCoverLabel(items).toUpperCase(), layout.textX, layout.titleY, 44, 760, {
     color: "#ffffff",
     weight: 950
   });
 
-  const count = items.length;
-  const rowGap = count <= 2 ? 235 : count === 3 ? 195 : 170;
-  const startY = count <= 2 ? 360 : count === 3 ? 285 : 230;
   for (let index = 0; index < items.length; index += 1) {
-    await drawYoutubeCoverGame(ctx, items[index], startY + index * rowGap, count);
+    await drawYoutubeCoverGame(ctx, items[index], layout.startY + index * layout.rowGap, layout);
   }
 
   currentStory.blob = await canvasToBlob(canvas);
   els.downloadStory.disabled = false;
   els.shareStory.disabled = false;
+}
+
+function youtubeCoverLayout(count) {
+  const base = {
+    textX: 1325,
+    leftX: 1010,
+    rightX: 1640,
+    timeSize: 28,
+    modalitySize: 34,
+    venueSize: 22,
+    xSize: 38
+  };
+  if (count <= 1) {
+    return { ...base, titleY: 330, startY: 555, rowGap: 0, logoSize: 230 };
+  }
+  if (count === 2) {
+    return { ...base, titleY: 270, startY: 460, rowGap: 260, logoSize: 205 };
+  }
+  if (count === 3) {
+    return { ...base, titleY: 210, startY: 390, rowGap: 215, logoSize: 178 };
+  }
+  if (count === 4) {
+    return { ...base, titleY: 150, startY: 315, rowGap: 172, logoSize: 158 };
+  }
+  return {
+    ...base,
+    titleY: 105,
+    startY: 245,
+    rowGap: 152,
+    logoSize: 132,
+    timeSize: 24,
+    modalitySize: 30,
+    venueSize: 19,
+    xSize: 32
+  };
 }
 
 async function drawYoutubeBrand(ctx) {
@@ -2223,32 +2249,27 @@ async function drawYoutubeBrand(ctx) {
   }
 }
 
-async function drawYoutubeCoverGame(ctx, item, y, count) {
-  const textX = 1325;
-  const logoSize = count >= 4 ? 150 : 175;
-  const leftX = 900;
-  const rightX = 1750;
-
+async function drawYoutubeCoverGame(ctx, item, y, layout) {
   if (item.teamA && item.teamB) {
-    await drawYoutubeTeamLogo(ctx, item.teamA, leftX, y + 10, logoSize);
-    await drawYoutubeTeamLogo(ctx, item.teamB, rightX, y + 10, logoSize);
-    drawPositionedText(ctx, "X", textX, y + 76, 38, 80);
+    await drawYoutubeTeamLogo(ctx, item.teamA, layout.leftX, y + 10, layout.logoSize);
+    await drawYoutubeTeamLogo(ctx, item.teamB, layout.rightX, y + 10, layout.logoSize);
+    drawPositionedText(ctx, "X", layout.textX, y + 72, layout.xSize, 80);
   } else {
-    drawPositionedText(ctx, cleanDisplayText(item.participants || item.phase || "EVENTO").toUpperCase(), textX, y + 78, 34, 620, {
+    drawPositionedText(ctx, cleanDisplayText(item.participants || item.phase || "EVENTO").toUpperCase(), layout.textX, y + 72, layout.modalitySize, 620, {
       color: "rgba(255,255,255,0.82)",
       weight: 900
     });
   }
 
-  drawPositionedText(ctx, item.time, textX, y - 36, 28, 180, {
+  drawPositionedText(ctx, item.time, layout.textX, y - 36, layout.timeSize, 180, {
     color: "rgba(255,255,255,0.74)",
     weight: 900
   });
-  drawPositionedText(ctx, titleCaseWords(item.modality).toUpperCase(), textX, y, 34, 530, {
+  drawPositionedText(ctx, titleCaseWords(item.modality).toUpperCase(), layout.textX, y, layout.modalitySize, 530, {
     color: "#ffffff",
     weight: 950
   });
-  drawPositionedText(ctx, cleanDisplayText(item.venue).toUpperCase(), textX, y + 38, 22, 520, {
+  drawPositionedText(ctx, cleanDisplayText(item.venue).toUpperCase(), layout.textX, y + 36, layout.venueSize, 520, {
     color: "rgba(255,255,255,0.62)",
     weight: 900
   });
