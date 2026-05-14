@@ -6,10 +6,12 @@
   --panel: #ffffff;
   --red: #e11d48;
   --blue: #7c3aed;
+  --purple: #7c3aed;
   --amber: #f59e0b;
   --green: #059669;
   --soft-red: #fff1f2;
   --soft-blue: #f3e8ff;
+  --soft-purple: #f3e8ff;
   --soft-amber: #fffbeb;
   --soft-green: #ecfdf5;
   --shadow: 0 12px 28px rgba(20, 20, 20, 0.08);
@@ -1156,6 +1158,7 @@ select:focus {
 }
 
 .upcoming-panel,
+.youtube-panel,
 .progress-toolbar {
   display: grid;
   gap: 14px;
@@ -1169,6 +1172,7 @@ select:focus {
 }
 
 .upcoming-head,
+.youtube-head,
 .progress-toolbar {
   display: flex;
   align-items: end;
@@ -1177,6 +1181,7 @@ select:focus {
 }
 
 .upcoming-head p,
+.youtube-head p,
 .progress-toolbar p {
   margin: 0 0 3px;
   color: var(--muted);
@@ -1186,6 +1191,7 @@ select:focus {
 }
 
 .upcoming-head h2,
+.youtube-head h2,
 .progress-toolbar h2 {
   margin: 0;
   font-size: 1.1rem;
@@ -1194,6 +1200,7 @@ select:focus {
 .upcoming-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  align-items: stretch;
   gap: 10px;
 }
 
@@ -1255,7 +1262,9 @@ select:focus {
 
 .upcoming-batch {
   display: grid;
+  grid-template-rows: auto 1fr auto;
   gap: 10px;
+  min-height: 236px;
   padding: 12px;
 }
 
@@ -1305,7 +1314,196 @@ select:focus {
 
 .upcoming-batch-games {
   display: grid;
+  align-content: start;
   gap: 6px;
+}
+
+.youtube-head {
+  align-items: center;
+}
+
+.youtube-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.youtube-tools {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) auto minmax(170px, 1fr);
+  align-items: end;
+  gap: 10px;
+}
+
+.youtube-tools label,
+.youtube-tools select {
+  width: 100%;
+}
+
+.youtube-count {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 42px;
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.youtube-count strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--soft-purple);
+  color: var(--purple);
+}
+
+.youtube-hint {
+  border: 1px solid #eadcff;
+  border-radius: 8px;
+  background: #fbf7ff;
+  color: var(--muted);
+  padding: 10px 12px;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.youtube-days {
+  display: grid;
+  gap: 18px;
+}
+
+.youtube-day {
+  display: grid;
+  gap: 10px;
+}
+
+.youtube-day-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 6px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.youtube-day-head p {
+  margin: 0 0 2px;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.youtube-day-head h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.youtube-day-head span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 999px;
+  background: var(--soft-green);
+  color: var(--green);
+  padding: 0 10px;
+  font-size: 0.78rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.youtube-game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  align-items: stretch;
+  gap: 10px;
+}
+
+.youtube-game-card {
+  display: grid;
+  grid-template-columns: 22px 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 104px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.youtube-game-card.selected {
+  border-color: #c4b5fd;
+  background: var(--soft-purple);
+}
+
+.youtube-game-card input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--purple);
+}
+
+.youtube-game-logos {
+  display: grid;
+  grid-template-columns: 44px 18px 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.youtube-game-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.youtube-game-logos em {
+  color: var(--purple);
+  font-style: normal;
+  font-weight: 950;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.youtube-game-logos strong {
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.youtube-game-logos .youtube-event-chip {
+  grid-column: 1 / -1;
+  color: var(--purple);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.youtube-game-info {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.youtube-game-info strong {
+  min-width: 0;
+  font-size: 0.88rem;
+  line-height: 1.1;
+}
+
+.youtube-game-info small {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .upcoming-game-row {
@@ -1504,6 +1702,10 @@ select:focus {
   padding: 14px;
 }
 
+.story-modal.wide-art .story-dialog {
+  width: min(980px, 100%);
+}
+
 .story-head {
   display: flex;
   align-items: center;
@@ -1546,6 +1748,11 @@ select:focus {
   width: min(100%, 320px);
   height: auto;
   aspect-ratio: 9 / 16;
+}
+
+.story-modal.wide-art #storyCanvas {
+  width: min(100%, 860px);
+  aspect-ratio: 16 / 9;
 }
 
 .story-actions {
@@ -1671,13 +1878,30 @@ button:disabled {
 
   .upcoming-head,
   .upcoming-day-head,
+  .youtube-head,
+  .youtube-day-head,
   .progress-toolbar {
     align-items: stretch;
     flex-direction: column;
     grid-template-columns: 1fr;
   }
 
+  .youtube-actions,
+  .youtube-tools {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .youtube-actions {
+    display: grid;
+  }
+
+  .youtube-count {
+    justify-content: flex-start;
+  }
+
   .upcoming-list,
+  .youtube-game-grid,
   .progress-summary {
     grid-template-columns: 1fr;
   }

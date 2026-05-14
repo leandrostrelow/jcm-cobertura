@@ -10,17 +10,22 @@ const STORY_BACKGROUNDS = {
   photos: "story-background-fotos.png",
   bracket: "story-background-chaveamento.png",
   upcoming: "story-background-proximos.png",
+  youtube: "youtube-cover-background.png",
   fallback: "story-background.png"
 };
 const STORY_WIDTH = 1080;
 const STORY_HEIGHT = 1920;
+const YOUTUBE_WIDTH = 1920;
+const YOUTUBE_HEIGHT = 1080;
+const logoSources = (fileName) => [fileName, `assets/logos/${fileName}`];
 const TEAM_LOGOS = {
-  "Multivix Vitória": "multivix-vitoria.png",
-  "Multivix Cachoeiro": "multivix-cachoeiro.png",
-  "UFES": "ufes.png",
-  "EMESCAM": "emescam.png",
-  "UVV": "uvv.png",
-  "UNESC": "unesc.png"
+  "Multivix Vitória": logoSources("multivix-vitoria.png"),
+  "Multivix Vitoria": logoSources("multivix-vitoria.png"),
+  "Multivix Cachoeiro": logoSources("multivix-cachoeiro.png"),
+  "UFES": logoSources("ufes.png"),
+  "EMESCAM": logoSources("emescam.png"),
+  "UVV": logoSources("uvv.png"),
+  "UNESC": logoSources("unesc.png")
 };
 const BRACKET_DEFINITIONS = [
   { id: "futsal-masculino", title: "Futsal Masculino", qf1: "JCM-013", qf2: "JCM-001", sf1: "JCM-018", sf2: "JCM-020", final: "JCM-053" },
@@ -62,6 +67,8 @@ let savingRemote = false;
 let notificationSoundReady = false;
 let notificationAudio = null;
 let notificationAudioContext = null;
+let youtubeDateFilter = "all";
+let youtubeSelectedIds = readYoutubeSelection();
 const saveTimers = {};
 
 const els = {
@@ -75,6 +82,8 @@ const els = {
   progressFilter: document.querySelector("#progressFilter"),
   upcomingView: document.querySelector("#upcomingView"),
   upcomingPanel: document.querySelector("#upcomingPanel"),
+  youtubeView: document.querySelector("#youtubeView"),
+  youtubePanel: document.querySelector("#youtubePanel"),
   dateFilter: document.querySelector("#dateFilter"),
   gamePicker: document.querySelector("#gamePicker"),
   prevGame: document.querySelector("#prevGame"),
@@ -88,6 +97,7 @@ const els = {
   syncStatus: document.querySelector("#syncStatus"),
   storyModal: document.querySelector("#storyModal"),
   storyCanvas: document.querySelector("#storyCanvas"),
+  storyKicker: document.querySelector("#storyKicker"),
   storyTitle: document.querySelector("#storyTitle"),
   downloadStory: document.querySelector("#downloadStory"),
   shareStory: document.querySelector("#shareStory"),
@@ -123,6 +133,19 @@ function readNotifications() {
 
 function saveNotifications() {
   localStorage.setItem(notificationKey, JSON.stringify(notifications.slice(0, 30)));
+}
+
+function readYoutubeSelection() {
+  try {
+    const value = JSON.parse(localStorage.getItem("jcm-youtube-selection-v1")) || [];
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveYoutubeSelection() {
+  localStorage.setItem("jcm-youtube-selection-v1", JSON.stringify(youtubeSelectedIds));
 }
 
 function defaultPhotographer() {
@@ -503,25 +526,10 @@ function agendaGroupKey(item) {
 }
 
 function smartAgendaChunks(items, maxItems = 4) {
-  const runs = [];
-  items.forEach((item) => {
-    const key = agendaGroupKey(item);
-    const last = runs[runs.length - 1];
-    if (last && last.key === key) {
-      last.items.push(item);
-      return;
-    }
-    runs.push({ key, items: [item] });
-  });
-
   const chunks = [];
-  runs.forEach((run) => {
-    const queue = [...run.items];
-    while (queue.length) {
-      chunks.push(queue.splice(0, maxItems));
-    }
-  });
-
+  for (let index = 0; index < items.length; index += maxItems) {
+    chunks.push(items.slice(index, index + maxItems));
+  }
   return chunks;
 }
 
@@ -841,6 +849,7 @@ function render() {
   renderBrackets();
   renderProgressBoard();
   renderUpcomingPanel();
+  renderYoutubePanel();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -884,7 +893,12 @@ function teamLogoCandidates(name) {
 }
 
 function imageAttributes(className, src) {
-  return `class="${escapeHtml(className)}" src="${escapeHtml(src)}" alt="" onerror="this.remove()"`;
+  const sources = Array.isArray(src) ? src.filter(Boolean) : [src].filter(Boolean);
+  const fallback = sources[1] || "";
+  const onerror = fallback
+    ? `if(this.dataset.fallback){this.src=this.dataset.fallback;this.dataset.fallback=''}else{this.remove()}`
+    : "this.remove()";
+  return `class="${escapeHtml(className)}" src="${escapeHtml(sources[0] || "")}" ${fallback ? `data-fallback="${escapeHtml(fallback)}"` : ""} alt="" onerror="${escapeHtml(onerror)}"`;
 }
 
 function renderPhotographer(person, index) {
@@ -1053,19 +1067,21 @@ function renderNotifications() {
 }
 
 function switchView(view) {
-  activeView = ["brackets", "progress", "upcoming"].includes(view) ? view : "coverage";
+  activeView = ["brackets", "progress", "upcoming", "youtube"].includes(view) ? view : "coverage";
   els.coveragePanels.forEach((panel) => {
     panel.hidden = activeView !== "coverage";
   });
   if (els.bracketsView) els.bracketsView.hidden = activeView !== "brackets";
   if (els.progressView) els.progressView.hidden = activeView !== "progress";
   if (els.upcomingView) els.upcomingView.hidden = activeView !== "upcoming";
+  if (els.youtubeView) els.youtubeView.hidden = activeView !== "youtube";
   document.querySelectorAll(".view-tab").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === activeView);
   });
   if (activeView === "brackets") renderBrackets();
   if (activeView === "progress") renderProgressBoard();
   if (activeView === "upcoming") renderUpcomingPanel();
+  if (activeView === "youtube") renderYoutubePanel();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -1354,6 +1370,141 @@ function renderUpcomingGameRow(item) {
   `;
 }
 
+function youtubeItems() {
+  return agendaItems().map(resolveItemTeams);
+}
+
+function youtubeItemsByDate() {
+  return youtubeItems().reduce((groups, item) => {
+    if (youtubeDateFilter !== "all" && item.date !== youtubeDateFilter) return groups;
+    const last = groups[groups.length - 1];
+    if (!last || last.date !== item.date) {
+      groups.push({ date: item.date, label: `${weekdayShort(item.weekday)} - ${shortDate(item.date)}`, items: [] });
+    }
+    groups[groups.length - 1].items.push(item);
+    return groups;
+  }, []);
+}
+
+function selectedYoutubeItems() {
+  const items = youtubeItems();
+  return youtubeSelectedIds
+    .map((id) => items.find((item) => item.id === id))
+    .filter(Boolean)
+    .map(resolveItemTeams);
+}
+
+function renderYoutubePanel() {
+  if (!els.youtubePanel) return;
+  const dates = getDates();
+  const selectedCount = selectedYoutubeItems().length;
+  const groups = youtubeItemsByDate();
+  els.youtubePanel.innerHTML = `
+    <div class="youtube-head">
+      <div>
+        <p>Capas YouTube</p>
+        <h2>Selecione os jogos da capa</h2>
+      </div>
+      <div class="youtube-actions">
+        <button class="secondary-button slim" type="button" data-youtube-clear>
+          <i data-lucide="x"></i>
+          <span>Limpar</span>
+        </button>
+        <button class="generate-art" type="button" data-youtube-generate ${selectedCount ? "" : "disabled"}>
+          <i data-lucide="wand-sparkles"></i>
+          <span>Gerar capa</span>
+        </button>
+      </div>
+    </div>
+    <div class="youtube-tools">
+      <label>
+        <span>Data</span>
+        <select data-youtube-date-filter>
+          <option value="all">Todas as datas</option>
+          ${dates.map((date) => `<option value="${escapeHtml(date)}" ${youtubeDateFilter === date ? "selected" : ""}>${escapeHtml(shortDate(date))}</option>`).join("")}
+        </select>
+      </label>
+      <button class="secondary-button" type="button" data-youtube-select-visible>
+        <i data-lucide="check-square"></i>
+        <span>Selecionar dia visível</span>
+      </button>
+      <div class="youtube-count">
+        <strong>${selectedCount}</strong>
+        <span>selecionados para a capa</span>
+      </div>
+    </div>
+    <div class="youtube-hint">Ideal para capa: 2 a 4 jogos. O fundo pode ficar na raiz com o nome <strong>youtube-cover-background.png</strong>.</div>
+    <div class="youtube-days">
+      ${groups.length ? groups.map(renderYoutubeDay).join("") : `<div class="upcoming-empty">Não há jogos para selecionar.</div>`}
+    </div>
+  `;
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderYoutubeDay(group) {
+  const selected = group.items.filter((item) => youtubeSelectedIds.includes(item.id)).length;
+  return `
+    <section class="youtube-day">
+      <header class="youtube-day-head">
+        <div>
+          <p>${escapeHtml(group.label)}</p>
+          <h3>${group.items.length} ${group.items.length === 1 ? "item" : "itens"}</h3>
+        </div>
+        <span>${selected} selecionados</span>
+      </header>
+      <div class="youtube-game-grid">
+        ${group.items.map(renderYoutubeGameCard).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderYoutubeGameCard(item) {
+  const selected = youtubeSelectedIds.includes(item.id);
+  const leftLogo = item.teamA ? teamLogoCandidates(item.teamA) : "";
+  const rightLogo = item.teamB ? teamLogoCandidates(item.teamB) : "";
+  const eventLabel = !item.teamA || !item.teamB ? cleanDisplayText(item.participants || item.phase || item.modality) : "";
+  const logosHtml = item.teamA && item.teamB
+    ? `${leftLogo ? `<img ${imageAttributes("youtube-game-logo", leftLogo)}>` : `<strong>${escapeHtml(teamInitials(item.teamA))}</strong>`}
+        <em>x</em>
+        ${rightLogo ? `<img ${imageAttributes("youtube-game-logo", rightLogo)}>` : `<strong>${escapeHtml(teamInitials(item.teamB))}</strong>`}`
+    : `<strong class="youtube-event-chip">${escapeHtml(eventLabel || "Evento")}</strong>`;
+  return `
+    <label class="youtube-game-card ${selected ? "selected" : ""}">
+      <input type="checkbox" ${selected ? "checked" : ""} data-youtube-game="${escapeHtml(item.id)}">
+      <span class="youtube-game-logos">
+        ${logosHtml}
+      </span>
+      <span class="youtube-game-info">
+        <strong>${escapeHtml(item.time)} - ${escapeHtml(titleCaseWords(item.modality))}</strong>
+        <small>${escapeHtml(item.venue)}</small>
+        <small>${escapeHtml(matchTitle(item))}</small>
+      </span>
+    </label>
+  `;
+}
+
+function toggleYoutubeGame(id, checked) {
+  if (checked && youtubeSelectedIds.length >= 4 && !youtubeSelectedIds.includes(id)) {
+    showToast("Para manter a capa limpa, use no máximo 4 jogos.");
+    renderYoutubePanel();
+    return;
+  }
+  youtubeSelectedIds = checked
+    ? [...new Set([...youtubeSelectedIds, id])]
+    : youtubeSelectedIds.filter((itemId) => itemId !== id);
+  saveYoutubeSelection();
+  renderYoutubePanel();
+}
+
+function selectVisibleYoutubeDay() {
+  const visibleIds = youtubeItemsByDate().flatMap((group) => group.items.map((item) => item.id));
+  youtubeSelectedIds = visibleIds.slice(0, 4);
+  saveYoutubeSelection();
+  renderYoutubePanel();
+  showToast("Selecionei os primeiros 4 itens visíveis para a capa.");
+}
+
 function toggleAgendaBatchPosted(batchId) {
   const batch = agendaBatchById(batchId);
   if (!batch) return;
@@ -1498,6 +1649,12 @@ function storyFileName(item, type) {
   return `${slugify(base)}.png`;
 }
 
+function setArtCanvasSize(width, height) {
+  els.storyCanvas.width = width;
+  els.storyCanvas.height = height;
+  els.storyModal.classList.toggle("wide-art", width > height);
+}
+
 function bracketStoryFileName(bracket) {
   return `${slugify(`chaveamento-atualizado-${bracket.title}`)}.png`;
 }
@@ -1531,18 +1688,20 @@ function loadImage(src) {
 }
 
 function drawCover(ctx, image) {
-  const scale = Math.max(STORY_WIDTH / image.width, STORY_HEIGHT / image.height);
+  const widthTarget = ctx.canvas.width;
+  const heightTarget = ctx.canvas.height;
+  const scale = Math.max(widthTarget / image.width, heightTarget / image.height);
   const width = image.width * scale;
   const height = image.height * scale;
-  ctx.drawImage(image, (STORY_WIDTH - width) / 2, (STORY_HEIGHT - height) / 2, width, height);
+  ctx.drawImage(image, (widthTarget - width) / 2, (heightTarget - height) / 2, width, height);
 }
 
 function drawFallbackBackground(ctx) {
-  const gradient = ctx.createLinearGradient(0, 0, STORY_WIDTH, 0);
+  const gradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
   gradient.addColorStop(0, "#3c1763");
   gradient.addColorStop(1, "#080311");
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 }
 
 function drawContainedImage(ctx, image, centerX, centerY, maxWidth, maxHeight) {
@@ -1770,6 +1929,7 @@ async function openStoryArt(type) {
   }
 
   els.storyModal.hidden = false;
+  if (els.storyKicker) els.storyKicker.textContent = "Arte para Instagram";
   els.storyTitle.textContent = type === "photos" ? "Arte de fotos" : type === "result" ? "Arte de resultado" : "Arte de início";
   els.downloadStory.disabled = true;
   els.shareStory.disabled = true;
@@ -1789,6 +1949,7 @@ async function openBracketArt(bracketId) {
   if (!bracket) return;
 
   els.storyModal.hidden = false;
+  if (els.storyKicker) els.storyKicker.textContent = "Arte para Instagram";
   els.storyTitle.textContent = "Arte de chaveamento";
   els.downloadStory.disabled = true;
   els.shareStory.disabled = true;
@@ -1811,6 +1972,7 @@ async function openUpcomingArt(batchId) {
   }
 
   els.storyModal.hidden = false;
+  if (els.storyKicker) els.storyKicker.textContent = "Arte para Instagram";
   els.storyTitle.textContent = "Arte de próximos jogos";
   els.downloadStory.disabled = true;
   els.shareStory.disabled = true;
@@ -1825,7 +1987,45 @@ async function openUpcomingArt(batchId) {
   if (window.lucide) lucide.createIcons();
 }
 
+async function openYoutubeCoverArt() {
+  const items = selectedYoutubeItems();
+  if (!items.length) {
+    showToast("Selecione pelo menos um jogo para montar a capa.");
+    return;
+  }
+  if (items.length > 4) {
+    showToast("Para a capa ficar limpa, selecione no máximo 4 jogos.");
+    return;
+  }
+
+  const label = youtubeCoverLabel(items);
+  els.storyModal.hidden = false;
+  if (els.storyKicker) els.storyKicker.textContent = "Capa para YouTube";
+  els.storyTitle.textContent = "Capa YouTube";
+  els.downloadStory.disabled = true;
+  els.shareStory.disabled = true;
+  currentStory = {
+    blob: null,
+    fileName: `${slugify(`capa-youtube-${label}`)}.png`,
+    title: `Capa YouTube - ${label}`,
+    linkToCopy: ""
+  };
+
+  await drawYoutubeCover(items);
+  if (window.lucide) lucide.createIcons();
+}
+
+function youtubeCoverLabel(items) {
+  const dates = [...new Set(items.map((item) => item.date).filter(Boolean))];
+  if (dates.length === 1) {
+    const first = items[0];
+    return `${weekdayShort(first.weekday)} - ${shortDate(first.date)}`;
+  }
+  return "Jogos selecionados";
+}
+
 async function drawStory(type, item, data) {
+  setArtCanvasSize(STORY_WIDTH, STORY_HEIGHT);
   const canvas = els.storyCanvas;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
@@ -1900,6 +2100,7 @@ async function drawStory(type, item, data) {
 }
 
 async function drawBracketStory(bracket) {
+  setArtCanvasSize(STORY_WIDTH, STORY_HEIGHT);
   const canvas = els.storyCanvas;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
@@ -1925,6 +2126,7 @@ async function drawBracketStory(bracket) {
 
 async function drawUpcomingStory(batch) {
   const games = batch.games;
+  setArtCanvasSize(STORY_WIDTH, STORY_HEIGHT);
   const canvas = els.storyCanvas;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
@@ -1971,6 +2173,103 @@ async function drawUpcomingStoryGame(ctx, item, y) {
   await drawSmallStoryLogo(ctx, item.teamA, x - 360, logoY);
   drawPositionedText(ctx, "X", x, y + 68, 38, 80);
   await drawSmallStoryLogo(ctx, item.teamB, x + 360, logoY);
+}
+
+async function drawYoutubeCover(items) {
+  setArtCanvasSize(YOUTUBE_WIDTH, YOUTUBE_HEIGHT);
+  const canvas = els.storyCanvas;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, YOUTUBE_WIDTH, YOUTUBE_HEIGHT);
+
+  await drawStoryBackground(ctx, [STORY_BACKGROUNDS.youtube, STORY_BACKGROUNDS.upcoming, STORY_BACKGROUNDS.fallback]);
+  const leftGradient = ctx.createLinearGradient(0, 0, 820, 0);
+  leftGradient.addColorStop(0, "rgba(0,0,0,0.60)");
+  leftGradient.addColorStop(1, "rgba(0,0,0,0.10)");
+  ctx.fillStyle = leftGradient;
+  ctx.fillRect(0, 0, 850, YOUTUBE_HEIGHT);
+  ctx.fillStyle = "rgba(0,0,0,0.12)";
+  ctx.fillRect(760, 0, YOUTUBE_WIDTH - 760, YOUTUBE_HEIGHT);
+
+  drawPositionedText(ctx, youtubeCoverLabel(items).toUpperCase(), 1325, 82, 44, 760, {
+    color: "#ffffff",
+    weight: 950
+  });
+
+  const count = items.length;
+  const rowGap = count <= 2 ? 235 : count === 3 ? 195 : 170;
+  const startY = count <= 2 ? 360 : count === 3 ? 285 : 230;
+  for (let index = 0; index < items.length; index += 1) {
+    await drawYoutubeCoverGame(ctx, items[index], startY + index * rowGap, count);
+  }
+
+  currentStory.blob = await canvasToBlob(canvas);
+  els.downloadStory.disabled = false;
+  els.shareStory.disabled = false;
+}
+
+async function drawYoutubeBrand(ctx) {
+  try {
+    const jcmLogo = await loadImage(["jcm-logo.png", "LOGO JCM + LOTUS/jcm-logo.png"]);
+    drawContainedImage(ctx, jcmLogo, 365, 345, 540, 390);
+  } catch {
+    drawPositionedText(ctx, "JCM", 365, 345, 160, 520);
+  }
+
+  try {
+    const lotusLogo = await loadImage(["lotus-logo.png", "LOGO JCM + LOTUS/lotus-logo.png"]);
+    drawContainedImage(ctx, lotusLogo, 365, 740, 430, 175);
+  } catch {
+    drawPositionedText(ctx, "LOTUS", 365, 740, 86, 430);
+  }
+}
+
+async function drawYoutubeCoverGame(ctx, item, y, count) {
+  const textX = 1325;
+  const logoSize = count >= 4 ? 150 : 175;
+  const leftX = 900;
+  const rightX = 1750;
+
+  if (item.teamA && item.teamB) {
+    await drawYoutubeTeamLogo(ctx, item.teamA, leftX, y + 10, logoSize);
+    await drawYoutubeTeamLogo(ctx, item.teamB, rightX, y + 10, logoSize);
+    drawPositionedText(ctx, "X", textX, y + 76, 38, 80);
+  } else {
+    drawPositionedText(ctx, cleanDisplayText(item.participants || item.phase || "EVENTO").toUpperCase(), textX, y + 78, 34, 620, {
+      color: "rgba(255,255,255,0.82)",
+      weight: 900
+    });
+  }
+
+  drawPositionedText(ctx, item.time, textX, y - 36, 28, 180, {
+    color: "rgba(255,255,255,0.74)",
+    weight: 900
+  });
+  drawPositionedText(ctx, titleCaseWords(item.modality).toUpperCase(), textX, y, 34, 530, {
+    color: "#ffffff",
+    weight: 950
+  });
+  drawPositionedText(ctx, cleanDisplayText(item.venue).toUpperCase(), textX, y + 38, 22, 520, {
+    color: "rgba(255,255,255,0.62)",
+    weight: 900
+  });
+}
+
+async function drawYoutubeTeamLogo(ctx, teamName, x, y, size) {
+  const logo = teamLogoCandidates(teamName);
+  if (logo) {
+    try {
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.42)";
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 8;
+      drawContainedImage(ctx, await loadImage(logo), x, y, size, size);
+      ctx.restore();
+      return;
+    } catch {
+      // Fall back to text below.
+    }
+  }
+  drawPositionedText(ctx, teamInitials(teamName), x, y, 56, 140);
 }
 
 async function drawSmallStoryLogo(ctx, teamName, x, y) {
@@ -2289,6 +2588,37 @@ function bindEvents() {
     }
     if (!open) return;
     openBracketGame(open.dataset.openUpcomingGame);
+  });
+
+  els.youtubePanel?.addEventListener("change", (event) => {
+    const dateFilter = event.target.closest("[data-youtube-date-filter]");
+    const game = event.target.closest("[data-youtube-game]");
+    if (dateFilter) {
+      youtubeDateFilter = dateFilter.value;
+      renderYoutubePanel();
+      return;
+    }
+    if (!game) return;
+    toggleYoutubeGame(game.dataset.youtubeGame, game.checked);
+  });
+
+  els.youtubePanel?.addEventListener("click", (event) => {
+    const clear = event.target.closest("[data-youtube-clear]");
+    const selectVisible = event.target.closest("[data-youtube-select-visible]");
+    const generate = event.target.closest("[data-youtube-generate]");
+    if (clear) {
+      youtubeSelectedIds = [];
+      saveYoutubeSelection();
+      renderYoutubePanel();
+      return;
+    }
+    if (selectVisible) {
+      selectVisibleYoutubeDay();
+      return;
+    }
+    if (generate) {
+      openYoutubeCoverArt().catch(() => showToast("Não consegui gerar a capa do YouTube."));
+    }
   });
 
   els.dateFilter.addEventListener("change", () => {
