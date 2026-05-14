@@ -5,7 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>JCM | Ficha de Cobertura</title>
     <script>
-      if (location.hostname === "jcm.lotusformaturas.com") {
+      const publicBracketHosts = [
+        "jcm.lotusformaturas.com",
+        "jogos.lotusformaturas.com"
+      ];
+
+      if (
+        publicBracketHosts.includes(location.hostname) &&
+        !location.pathname.startsWith("/chaveamento")
+      ) {
         location.replace("/chaveamento");
       }
     </script>

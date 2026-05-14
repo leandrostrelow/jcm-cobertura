@@ -14,7 +14,40 @@
       ]
     },
     {
+      "source": "/",
+      "destination": "/chaveamento",
+      "permanent": false,
+      "has": [
+        {
+          "type": "host",
+          "value": "jogos.lotusformaturas.com"
+        }
+      ]
+    },
+    {
       "source": "/index",
+      "destination": "/chaveamento",
+      "permanent": false,
+      "has": [
+        {
+          "type": "host",
+          "value": "jcm.lotusformaturas.com"
+        }
+      ]
+    },
+    {
+      "source": "/index",
+      "destination": "/chaveamento",
+      "permanent": false,
+      "has": [
+        {
+          "type": "host",
+          "value": "jogos.lotusformaturas.com"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
       "destination": "/chaveamento",
       "permanent": false,
       "has": [
@@ -31,7 +64,7 @@
       "has": [
         {
           "type": "host",
-          "value": "jcm.lotusformaturas.com"
+          "value": "jogos.lotusformaturas.com"
         }
       ]
     }
