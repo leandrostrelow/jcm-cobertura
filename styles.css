@@ -1056,6 +1056,10 @@ select:focus {
   padding: 5px 10px 5px 5px;
 }
 
+.bracket-match.inline-score .bracket-team {
+  grid-template-columns: 58px minmax(0, 1fr) 46px;
+}
+
 .bracket-team.winner {
   background: var(--soft-green);
   color: var(--green);
@@ -1096,11 +1100,33 @@ select:focus {
   font-weight: 950;
 }
 
+.bracket-score-input {
+  width: 42px;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 950;
+  text-align: center;
+}
+
+.bracket-score-input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.16);
+  outline: none;
+}
+
 .bracket-match footer span {
   min-width: 0;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 850;
+}
+
+.bracket-inline-note {
+  text-align: right;
 }
 
 .bracket-empty {
@@ -1502,6 +1528,10 @@ button:disabled {
   .bracket-team {
     grid-template-columns: 52px minmax(0, 1fr) 30px;
     min-height: 60px;
+  }
+
+  .bracket-match.inline-score .bracket-team {
+    grid-template-columns: 52px minmax(0, 1fr) 46px;
   }
 
   .bracket-team-logo {

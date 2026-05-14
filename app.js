@@ -201,6 +201,28 @@ function normalizeText(value) {
   return value == null ? "" : String(value);
 }
 
+function formatSheetDate(value, fallback = "") {
+  const text = normalizeText(value || fallback).trim();
+  if (!text) return "";
+  const isoDate = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);
+  if (isoDate) return `${isoDate[3]}/${isoDate[2]}/${isoDate[1]}`;
+  return text;
+}
+
+function formatSheetTime(value, fallback = "") {
+  const text = normalizeText(value || fallback).trim();
+  if (!text) return "";
+  const plainTime = text.match(/^(\d{1,2}):(\d{2})/);
+  if (plainTime) return `${plainTime[1].padStart(2, "0")}:${plainTime[2]}`;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(text)) {
+    const parsed = new Date(text);
+    if (!Number.isNaN(parsed.getTime())) {
+      return `${String(parsed.getHours()).padStart(2, "0")}:${String(parsed.getMinutes()).padStart(2, "0")}`;
+    }
+  }
+  return text;
+}
+
 function splitJoinedValues(value) {
   return normalizeText(value)
     .split("|")
@@ -241,9 +263,9 @@ function rowToItem(row) {
   return {
     id: normalizeText(row.ID || fallback.id),
     weekend: normalizeText(row["Fim de semana"] || fallback.weekend),
-    date: normalizeText(row.Data || fallback.date),
+    date: formatSheetDate(row.Data, fallback.date),
     weekday: normalizeText(row.Dia || fallback.weekday),
-    time: normalizeText(row["Horário"] || fallback.time),
+    time: formatSheetTime(row["Horário"], fallback.time),
     venue: normalizeText(row.Local || fallback.venue),
     type: normalizeText(row.Tipo || fallback.type),
     modality: normalizeText(row.Modalidade || fallback.modality),
@@ -262,7 +284,9 @@ function mergeRemoteSchedule(remoteItems) {
     const remoteItem = remoteById.get(item.id);
     if (!remoteItem) return item;
     used.add(item.id);
-    return { ...item, ...remoteItem };
+    const mergedItem = { ...item, ...remoteItem };
+    if (item.type === "Chaveamento") mergedItem.type = item.type;
+    return mergedItem;
   });
   remoteItems.forEach((item) => {
     if (!used.has(item.id) && !localSchedule.some((local) => local.id === item.id)) merged.push(item);
@@ -412,7 +436,7 @@ function recordToSheetData(id) {
 }
 
 function shortDate(date) {
-  return normalizeText(date).slice(0, 5);
+  return formatSheetDate(date).slice(0, 5);
 }
 
 function getDates() {
@@ -421,11 +445,20 @@ function getDates() {
 
 function getVisibleGames() {
   const date = els.dateFilter.value;
-  return schedule.filter((item) => date === "all" || item.date === date);
+  return schedule.filter((item) => item.type !== "Chaveamento" && (date === "all" || item.date === date));
 }
 
 function gameItems() {
   return schedule.filter((item) => item.type === "Jogo" && item.teamA && item.teamB);
+}
+
+function isAgendaEvent(item) {
+  return item.type === "Evento" && /cabo/i.test(slugify(item.modality || item.sport || ""));
+}
+
+function agendaItems() {
+  return [...gameItems(), ...schedule.filter(isAgendaEvent)]
+    .sort((a, b) => `${a.dateISO || ""} ${a.time || ""}`.localeCompare(`${b.dateISO || ""} ${b.time || ""}`));
 }
 
 function upcomingGames(count = 4, fromId = selectedId) {
@@ -437,7 +470,7 @@ function upcomingGames(count = 4, fromId = selectedId) {
 
 function agendaPostBatches() {
   const dateGroups = new Map();
-  gameItems().map(resolveItemTeams).forEach((item) => {
+  agendaItems().map(resolveItemTeams).forEach((item) => {
     const key = item.date || "Sem data";
     if (!dateGroups.has(key)) dateGroups.set(key, []);
     dateGroups.get(key).push(item);
@@ -874,6 +907,17 @@ function updateField(field, value) {
   queueSave(item.id);
 }
 
+function updateBracketScore(id, field, value) {
+  const item = getItemById(id);
+  if (!item || !["scoreA", "scoreB"].includes(field)) return;
+  const data = record(id);
+  data[field] = value;
+  syncScoreCompletion(data);
+  saveState();
+  queueSave(id, true);
+  renderBrackets();
+}
+
 function updatePhotographerField(data, index, field, target) {
   data.photographers[index] = normalizePhotographer(data.photographers[index]);
   data.photographers[index][field] = target.type === "checkbox" ? target.checked : target.value;
@@ -1019,38 +1063,53 @@ function renderBracketMatch(id) {
   const data = record(item.id);
   const winner = winnerForMatch(item.id);
   const scoreReady = hasCompleteScore(data);
+  const inlineScore = item.type === "Chaveamento";
+  const matchClasses = ["bracket-match", winner ? "has-winner" : "", inlineScore ? "inline-score" : ""].filter(Boolean).join(" ");
   return `
-    <article class="bracket-match ${winner ? "has-winner" : ""}">
+    <article class="${matchClasses}">
       <header>
         <span>${escapeHtml(`${shortDate(item.date)} ${item.time}`)}</span>
         <strong>${escapeHtml(item.phase)}</strong>
       </header>
       <div class="bracket-teams">
-        ${renderBracketTeam(item.teamA, data.scoreA, scoreReady && winner === item.teamA)}
-        ${renderBracketTeam(item.teamB, data.scoreB, scoreReady && winner === item.teamB)}
+        ${renderBracketTeam(item.teamA, data.scoreA, scoreReady && winner === item.teamA, {
+          editable: inlineScore,
+          itemId: item.id,
+          field: "scoreA"
+        })}
+        ${renderBracketTeam(item.teamB, data.scoreB, scoreReady && winner === item.teamB, {
+          editable: inlineScore,
+          itemId: item.id,
+          field: "scoreB"
+        })}
       </div>
       <footer>
         <span>${winner ? `Vencedor: ${escapeHtml(formatWinnerName(winner))}` : escapeHtml(statusForRecord(data))}</span>
-        <button class="secondary-button slim" type="button" data-open-bracket-game="${escapeHtml(item.id)}">
-          <i data-lucide="external-link"></i>
-          <span>Abrir</span>
-        </button>
+        ${inlineScore
+          ? `<span class="bracket-inline-note">Placar no chaveamento</span>`
+          : `<button class="secondary-button slim" type="button" data-open-bracket-game="${escapeHtml(item.id)}">
+              <i data-lucide="external-link"></i>
+              <span>Abrir</span>
+            </button>`}
       </footer>
     </article>
   `;
 }
 
-function renderBracketTeam(name, score, isWinner) {
+function renderBracketTeam(name, score, isWinner, options = {}) {
   const normalized = normalizeText(name);
   const logo = teamLogoCandidates(normalized);
   const waiting = /^Vencedor/i.test(normalized);
   const classes = ["bracket-team", isWinner ? "winner" : "", waiting ? "waiting" : ""].filter(Boolean).join(" ");
   const safeScore = normalizeText(score);
+  const scoreControl = options.editable && !waiting
+    ? `<input class="bracket-score-input" inputmode="numeric" maxlength="3" value="${escapeHtml(safeScore)}" data-bracket-score="${escapeHtml(options.itemId)}" data-field="${escapeHtml(options.field)}" aria-label="Placar ${escapeHtml(normalized)}">`
+    : `<span class="bracket-score">${escapeHtml(safeScore || "-")}</span>`;
   return `
     <div class="${classes}">
       ${logo ? `<img ${imageAttributes("bracket-team-logo", logo)}>` : `<span class="bracket-team-logo fallback">${escapeHtml(teamInitials(normalized))}</span>`}
       <strong>${formatTeamName(normalized)}</strong>
-      <span class="bracket-score">${escapeHtml(safeScore || "-")}</span>
+      ${scoreControl}
     </div>
   `;
 }
@@ -1800,6 +1859,14 @@ async function drawUpcomingStoryGame(ctx, item, y) {
     weight: 850
   });
 
+  if (!item.teamA || !item.teamB) {
+    drawPositionedText(ctx, normalizeText(item.participants || item.phase || "EVENTO").toUpperCase(), x, y + 68, 28, 620, {
+      color: "rgba(255,255,255,0.82)",
+      weight: 850
+    });
+    return;
+  }
+
   const logoY = y + 20;
   await drawSmallStoryLogo(ctx, item.teamA, x - 360, logoY);
   drawPositionedText(ctx, "X", x, y + 68, 38, 80);
@@ -2094,6 +2161,12 @@ function bindEvents() {
     }
     if (!open) return;
     openBracketGame(open.dataset.openBracketGame);
+  });
+
+  els.bracketsBoard?.addEventListener("change", (event) => {
+    const input = event.target.closest("[data-bracket-score]");
+    if (!input) return;
+    updateBracketScore(input.dataset.bracketScore, input.dataset.field, input.value);
   });
 
   els.progressBoard?.addEventListener("click", (event) => {
