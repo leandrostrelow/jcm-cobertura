@@ -29,6 +29,7 @@ const BRACKET_DEFINITIONS = [
   { id: "handebol-feminino", title: "Handebol Feminino", qf1: "JCM-009", qf2: "JCM-005", sf1: "JCM-032", sf2: "JCM-030", final: "JCM-047" },
   { id: "basquete-masculino", title: "Basquete Masculino", qf1: "JCM-017", qf2: "JCM-027", sf1: "JCM-034", sf2: "JCM-035", final: "JCM-045" },
   { id: "basquete-feminino", title: "Basquete Feminino", qf1: "JCM-016", qf2: "", sf1: "JCM-033", sf2: "JCM-026", final: "JCM-043" },
+  { id: "cabo-de-guerra-masculino", title: "Cabo de Guerra Masculino", qf1: "JCM-056", qf2: "JCM-057", sf1: "JCM-058", sf2: "JCM-059", final: "JCM-060" },
   { id: "futebol-masculino", title: "Futebol de Campo", qf1: "JCM-015", qf2: "JCM-014", sf1: "JCM-037", sf2: "JCM-036", final: "JCM-038" },
   { id: "volei-masculino", title: "Volei Masculino", qf1: "JCM-011", qf2: "JCM-010", sf1: "JCM-023", sf2: "JCM-022", final: "JCM-041" },
   { id: "volei-feminino", title: "Volei Feminino", qf1: "JCM-007", qf2: "JCM-008", sf1: "JCM-024", sf2: "JCM-025", final: "JCM-039" }
@@ -253,6 +254,21 @@ function rowToItem(row) {
   };
 }
 
+function mergeRemoteSchedule(remoteItems) {
+  const remoteById = new Map(remoteItems.map((item) => [item.id, item]));
+  const used = new Set();
+  const merged = localSchedule.map((item) => {
+    const remoteItem = remoteById.get(item.id);
+    if (!remoteItem) return item;
+    used.add(item.id);
+    return { ...item, ...remoteItem };
+  });
+  remoteItems.forEach((item) => {
+    if (!used.has(item.id) && !localSchedule.some((local) => local.id === item.id)) merged.push(item);
+  });
+  return merged;
+}
+
 function rowToRecord(row) {
   const finalizada = bool(row.Finalizada);
   const started = bool(row["Início feito"]) || finalizada || row.Status === "Em cobertura" || row.Status === "Finalizada";
@@ -329,6 +345,7 @@ function extraPhotographersFromRow(row) {
 }
 
 function recordToSheetData(id) {
+  const item = getItemById(id) || {};
   const data = record(id);
   const finalized = isRecordFinalized(data);
   const extras = data.photographers.slice(2);
@@ -338,7 +355,18 @@ function recordToSheetData(id) {
   const photoB = data.photographers[1] || defaultPhotographer();
 
   return {
+    "ID": id,
+    "Fim de semana": item.weekend || "",
+    "Data": item.date || "",
+    "Dia": item.weekday || "",
+    "Horário": item.time || "",
+    "Local": item.venue || "",
+    "Tipo": item.type || "",
+    "Modalidade": item.modality || "",
+    "Fase": item.phase || "",
+    "Equipe A": item.teamA || "",
     "Placar A": data.scoreA,
+    "Equipe B": item.teamB || "",
     "Placar B": data.scoreB,
     "Status": statusForRecord(data),
     "Início feito": data.started,
@@ -377,7 +405,8 @@ function recordToSheetData(id) {
     "Fotos editadas feitas": data.editedPhotosDone,
     "Post agenda feito": data.upcomingPostDone,
     "Link live ao vivo": data.liveUrl,
-    "Finalizada": finalized
+    "Finalizada": finalized,
+    "Observações": item.notes || ""
   };
 }
 
@@ -1988,7 +2017,7 @@ async function loadRemoteData(options = {}) {
       return acc;
     }, {});
     detectRemoteNotifications(nextSchedule, nextState);
-    schedule = nextSchedule;
+    schedule = mergeRemoteSchedule(nextSchedule);
     state = nextState;
     remoteReady = true;
     saveState();
