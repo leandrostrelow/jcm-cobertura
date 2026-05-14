@@ -1197,6 +1197,53 @@ select:focus {
   gap: 10px;
 }
 
+.upcoming-days {
+  display: grid;
+  gap: 18px;
+}
+
+.upcoming-day {
+  display: grid;
+  gap: 10px;
+}
+
+.upcoming-day-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 6px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.upcoming-day-head p {
+  margin: 0 0 2px;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.upcoming-day-head h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.upcoming-day-head span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 999px;
+  background: var(--soft-purple);
+  color: var(--purple);
+  padding: 0 10px;
+  font-size: 0.78rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
 .upcoming-batch,
 .upcoming-empty,
 .progress-card,
@@ -1623,8 +1670,10 @@ button:disabled {
   }
 
   .upcoming-head,
+  .upcoming-day-head,
   .progress-toolbar {
     align-items: stretch;
+    flex-direction: column;
     grid-template-columns: 1fr;
   }
 

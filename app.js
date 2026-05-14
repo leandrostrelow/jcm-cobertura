@@ -207,12 +207,19 @@ function cleanDisplayText(value) {
     .replace(/Atl\?tica/g, "Atlética")
     .replace(/atl\?ticas/g, "atléticas")
     .replace(/atl\?tica/g, "atlética")
+    .replace(/Cabo[-\s]+de[-\s]+Guerra/gi, "Cabo de Guerra")
     .replace(/edit\?veis/g, "editáveis")
     .replace(/\?nico/g, "único");
 }
 
 function titleCaseWords(value) {
+  const minorWords = new Set(["de", "da", "do", "das", "dos", "e"]);
+  let wordIndex = 0;
   return cleanDisplayText(value).replace(/\p{L}[\p{L}\p{M}]*/gu, (word) => {
+    const lower = word.toLocaleLowerCase("pt-BR");
+    const isMinor = wordIndex > 0 && minorWords.has(lower);
+    wordIndex += 1;
+    if (isMinor) return lower;
     if (word.length <= 2 && word === word.toUpperCase()) return word;
     return word.charAt(0).toLocaleUpperCase("pt-BR") + word.slice(1).toLocaleLowerCase("pt-BR");
   });
@@ -508,33 +515,13 @@ function smartAgendaChunks(items, maxItems = 4) {
   });
 
   const chunks = [];
-  let current = [];
-
-  const pushCurrent = () => {
-    if (!current.length) return;
-    chunks.push(current);
-    current = [];
-  };
-
   runs.forEach((run) => {
     const queue = [...run.items];
     while (queue.length) {
-      const remaining = maxItems - current.length;
-      if (current.length && queue.length > remaining) {
-        pushCurrent();
-        continue;
-      }
-
-      if (!current.length && queue.length > maxItems) {
-        chunks.push(queue.splice(0, maxItems));
-        continue;
-      }
-
-      current.push(...queue.splice(0, remaining));
+      chunks.push(queue.splice(0, maxItems));
     }
   });
 
-  pushCurrent();
   return chunks;
 }
 
@@ -572,12 +559,28 @@ function agendaPostBatches() {
   return batches;
 }
 
+function agendaBatchesByDate() {
+  return agendaPostBatches().reduce((groups, batch) => {
+    if (!groups.length || groups[groups.length - 1].date !== batch.date) {
+      groups.push({ date: batch.date, label: batch.label, batches: [] });
+    }
+    groups[groups.length - 1].batches.push(batch);
+    return groups;
+  }, []);
+}
+
 function agendaBatchById(id) {
   return agendaPostBatches().find((batch) => batch.id === id);
 }
 
 function agendaBatchPosted(batch) {
   return batch.games.length > 0 && batch.games.every((item) => record(item.id).upcomingPostDone);
+}
+
+function agendaBatchTitle(batch) {
+  const sports = [...new Set(batch.games.map((item) => cleanDisplayText(item.sport || item.modality || "")).filter(Boolean))];
+  if (sports.length === 1) return titleCaseWords(sports[0]);
+  return `${batch.games.length} ${batch.games.length === 1 ? "jogo" : "jogos"}`;
 }
 
 function weekdayShort(weekday) {
@@ -1280,6 +1283,7 @@ function renderProgressCard(item) {
 function renderUpcomingPanel() {
   if (!els.upcomingPanel) return;
   const batches = agendaPostBatches();
+  const dayGroups = agendaBatchesByDate();
   els.upcomingPanel.innerHTML = `
     <div class="upcoming-head">
       <div>
@@ -1288,11 +1292,29 @@ function renderUpcomingPanel() {
       </div>
       <span class="upcoming-total">${batches.length} artes planejadas</span>
     </div>
-    <div class="upcoming-list">
-      ${batches.length ? batches.map(renderUpcomingBatch).join("") : `<div class="upcoming-empty">Não há jogos para montar agenda.</div>`}
+    <div class="upcoming-days">
+      ${dayGroups.length ? dayGroups.map(renderUpcomingDay).join("") : `<div class="upcoming-empty">Não há jogos para montar agenda.</div>`}
     </div>
   `;
   if (window.lucide) lucide.createIcons();
+}
+
+function renderUpcomingDay(group) {
+  const posted = group.batches.filter(agendaBatchPosted).length;
+  return `
+    <section class="upcoming-day">
+      <header class="upcoming-day-head">
+        <div>
+          <p>${escapeHtml(group.label)}</p>
+          <h3>${group.batches.length} ${group.batches.length === 1 ? "arte planejada" : "artes planejadas"}</h3>
+        </div>
+        <span>${posted} de ${group.batches.length} postadas</span>
+      </header>
+      <div class="upcoming-list">
+        ${group.batches.map(renderUpcomingBatch).join("")}
+      </div>
+    </section>
+  `;
 }
 
 function renderUpcomingBatch(batch) {
@@ -1301,8 +1323,8 @@ function renderUpcomingBatch(batch) {
     <article class="upcoming-batch ${done ? "done" : ""}">
       <header>
         <div>
-          <span>${escapeHtml(batch.label)}${batch.chunkLabel ? ` • Arte ${escapeHtml(batch.chunkLabel)}` : ""}</span>
-          <h3>${batch.games.length} ${batch.games.length === 1 ? "jogo" : "jogos"}</h3>
+          <span>${batch.chunkLabel ? `Arte ${escapeHtml(batch.chunkLabel)}` : "Arte única"} • ${batch.games.length} ${batch.games.length === 1 ? "jogo" : "jogos"}</span>
+          <h3>${escapeHtml(agendaBatchTitle(batch))}</h3>
         </div>
         <button class="icon-action ${done ? "done" : ""}" type="button" data-toggle-upcoming-posted="${escapeHtml(batch.id)}">
           <i data-lucide="check-circle-2"></i>
@@ -1326,7 +1348,7 @@ function renderUpcomingGameRow(item) {
   return `
     <button class="upcoming-game-row" type="button" data-open-upcoming-game="${escapeHtml(item.id)}">
       <span>${escapeHtml(item.time)}</span>
-      <strong>${escapeHtml(item.modality)}</strong>
+      <strong>${escapeHtml(titleCaseWords(item.modality))}</strong>
       <small>${escapeHtml(item.venue)}</small>
     </button>
   `;
