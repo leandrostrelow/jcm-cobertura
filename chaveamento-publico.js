@@ -42,12 +42,12 @@ const GAME_DEPENDENCIES = BRACKET_DEFINITIONS.reduce((dependencies, bracket) => 
 let schedule = [...localSchedule];
 let records = {};
 let activeModalityFilter = "all";
-let activeTeamFilter = "all";
+let activeTeamFilter = TEAM_OPTIONS[0]?.id || "all";
+let activeTeamModalityFilter = "all";
 
 const els = {
   status: document.querySelector("#publicSyncStatus"),
   modalitySelect: document.querySelector("#publicModalitySelect"),
-  teamSelect: document.querySelector("#publicTeamSelect"),
   teamSummary: document.querySelector("#publicTeamSummary"),
   board: document.querySelector("#publicBracketsBoard"),
   refresh: document.querySelector("#refreshBrackets")
@@ -309,8 +309,12 @@ function sortGameDateValue(item) {
   return new Date(year, month - 1, day, hour, minute).getTime();
 }
 
+function bracketForMatch(id) {
+  return BRACKET_DEFINITIONS.find((bracket) => bracketMatchIds(bracket).includes(id));
+}
+
 function bracketTitleForMatch(id) {
-  return BRACKET_DEFINITIONS.find((bracket) => bracketMatchIds(bracket).includes(id))?.title || "";
+  return bracketForMatch(id)?.title || "";
 }
 
 function activeModalityBrackets() {
@@ -333,6 +337,7 @@ function teamGames(option, brackets = BRACKET_DEFINITIONS) {
       const scoreReady = hasCompleteScore(data);
       return {
         ...item,
+        bracketId: bracketForMatch(id)?.id || "",
         modalityTitle: bracketTitleForMatch(id),
         opponent,
         scoreOwn,
@@ -358,7 +363,7 @@ function gameCountLabel(total) {
 }
 
 function renderControls() {
-  if (!els.modalitySelect || !els.teamSelect) return;
+  if (!els.modalitySelect) return;
   els.modalitySelect.innerHTML = [
     `<option value="all">Todas as modalidades</option>`,
     ...BRACKET_DEFINITIONS.map((bracket) => (
@@ -366,29 +371,49 @@ function renderControls() {
     ))
   ].join("");
   els.modalitySelect.value = activeModalityFilter;
-
-  els.teamSelect.innerHTML = [
-    `<option value="all">Todas as atlÃ©ticas</option>`,
-    ...TEAM_OPTIONS.map((team) => (
-      `<option value="${escapeHtml(team.id)}">${escapeHtml(team.name)}</option>`
-    ))
-  ].join("");
-  els.teamSelect.value = activeTeamFilter;
 }
 
 function renderTeamSummary() {
   if (!els.teamSummary) return;
-  const modalityBrackets = activeModalityBrackets();
-  const teams = activeTeamFilter === "all"
-    ? TEAM_OPTIONS.filter((team) => teamGames(team, modalityBrackets).length)
-    : TEAM_OPTIONS.filter((team) => team.id === activeTeamFilter);
-  els.teamSummary.innerHTML = teams.length
-    ? teams.map((team) => renderTeamSummaryCard(team, modalityBrackets)).join("")
-    : `<section class="public-empty-state">Nenhuma atlética encontrada para esses filtros.</section>`;
+  const selectedTeam = teamOption(activeTeamFilter) || TEAM_OPTIONS[0];
+  if (!selectedTeam) {
+    els.teamSummary.innerHTML = `<section class="public-empty-state">Nenhuma atlética encontrada.</section>`;
+    return;
+  }
+  els.teamSummary.innerHTML = `
+    <div class="public-team-buttons" aria-label="Escolher atlética">
+      ${TEAM_OPTIONS.map(renderTeamButton).join("")}
+    </div>
+    ${renderTeamSummaryCard(selectedTeam)}
+  `;
 }
 
-function renderTeamSummaryCard(team, brackets) {
-  const games = teamGames(team, brackets);
+function renderTeamButton(team) {
+  const logo = teamLogoCandidates(team.name);
+  const activeClass = team.id === activeTeamFilter ? "active" : "";
+  return `
+    <button class="public-team-button ${activeClass}" type="button" data-team="${escapeHtml(team.id)}" aria-pressed="${team.id === activeTeamFilter}">
+      ${logo ? `<img ${imageAttributes("public-team-button-logo", logo)}>` : `<span class="public-team-button-logo fallback">${escapeHtml(teamInitials(team.name))}</span>`}
+      <span>${escapeHtml(team.name)}</span>
+    </button>
+  `;
+}
+
+function teamModalityOptions(games) {
+  const options = [];
+  games.forEach((game) => {
+    if (!game.bracketId || options.some((option) => option.id === game.bracketId)) return;
+    options.push({ id: game.bracketId, title: game.modalityTitle || game.modality });
+  });
+  return options;
+}
+
+function renderTeamSummaryCard(team) {
+  const allGames = teamGames(team);
+  const filteredGames = activeTeamModalityFilter === "all"
+    ? allGames
+    : allGames.filter((game) => game.bracketId === activeTeamModalityFilter);
+  const options = teamModalityOptions(allGames);
   const logo = teamLogoCandidates(team.name);
   return `
     <article class="public-team-card">
@@ -396,11 +421,20 @@ function renderTeamSummaryCard(team, brackets) {
         ${logo ? `<img ${imageAttributes("public-team-logo", logo)}>` : `<span class="public-team-logo fallback">${escapeHtml(teamInitials(team.name))}</span>`}
         <div class="public-team-card-main">
           <strong>${escapeHtml(team.name)}</strong>
-          <span>${games.length ? gameCountLabel(games.length) : "Sem jogos no chaveamento"}</span>
+          <span>${allGames.length ? gameCountLabel(allGames.length) : "Sem jogos no chaveamento"}</span>
         </div>
+        <label class="public-team-modality">
+          <span>Modalidade da atlética</span>
+          <select id="publicTeamModalitySelect">
+            <option value="all">Todas as modalidades</option>
+            ${options.map((option) => (
+              `<option value="${escapeHtml(option.id)}" ${option.id === activeTeamModalityFilter ? "selected" : ""}>${escapeHtml(option.title)}</option>`
+            )).join("")}
+          </select>
+        </label>
       </header>
       <div class="public-team-games">
-        ${games.length ? games.map(renderTeamGame).join("") : `<span class="public-team-game-empty">Nenhum jogo encontrado.</span>`}
+        ${filteredGames.length ? filteredGames.map(renderTeamGame).join("") : `<span class="public-team-game-empty">Nenhum jogo encontrado.</span>`}
       </div>
     </article>
   `;
@@ -408,11 +442,19 @@ function renderTeamSummaryCard(team, brackets) {
 
 function renderTeamGame(game) {
   const statusClass = game.scoreReady ? "done" : "pending";
+  const selectedTeam = teamOption(activeTeamFilter);
   return `
     <div class="public-team-game ${statusClass}">
-      <div>
-        <strong>${escapeHtml(publicGameLabel(game))}</strong>
-        <span>x ${escapeHtml(game.opponent)}</span>
+      <div class="public-team-game-body">
+        <div class="public-team-game-meta">
+          <strong>${escapeHtml(`${shortDate(game.date)} ${game.time}`.trim())}</strong>
+          <span>${escapeHtml(titleCaseWords(game.modalityTitle || game.modality))}</span>
+          <small>${escapeHtml(titleCaseWords(game.phase))}</small>
+        </div>
+        <div class="public-team-game-versus">
+          <strong>${escapeHtml(selectedTeam?.name || "")} x ${escapeHtml(game.opponent)}</strong>
+          <span>${escapeHtml(game.venue || "")}</span>
+        </div>
       </div>
       <em>${escapeHtml(game.resultStatus)}</em>
     </div>
@@ -532,9 +574,18 @@ els.modalitySelect.addEventListener("change", (event) => {
   renderBrackets();
 });
 
-els.teamSelect.addEventListener("change", (event) => {
-  activeTeamFilter = event.target.value;
+els.teamSummary.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-team]");
+  if (!button) return;
+  activeTeamFilter = button.dataset.team;
+  activeTeamModalityFilter = "all";
   renderBrackets();
+});
+
+els.teamSummary.addEventListener("change", (event) => {
+  if (event.target.id !== "publicTeamModalitySelect") return;
+  activeTeamModalityFilter = event.target.value;
+  renderTeamSummary();
 });
 
 els.refresh.addEventListener("click", loadRemoteData);

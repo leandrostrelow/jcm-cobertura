@@ -245,7 +245,7 @@ h1 {
 
 .public-control-panel {
   display: grid;
-  grid-template-columns: minmax(220px, 0.9fr) minmax(220px, 0.7fr) auto;
+  grid-template-columns: minmax(220px, 1fr) auto;
   align-items: end;
   gap: 12px;
   margin: 0 auto;
@@ -410,6 +410,168 @@ h1 {
 
 .public-team-summary .public-empty-state {
   grid-column: 1 / -1;
+}
+
+.public-team-summary {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.public-team-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+}
+
+.public-team-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  padding: 6px 12px 6px 8px;
+  font-weight: 900;
+}
+
+.public-team-button.active {
+  border-color: #ddd6fe;
+  background: var(--soft-blue);
+  color: var(--blue);
+}
+
+.public-team-button-logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.public-team-button-logo.fallback {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--soft-blue);
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.public-team-card {
+  gap: 14px;
+  padding: 14px;
+}
+
+.public-team-card-head {
+  grid-template-columns: 66px minmax(0, 1fr) minmax(210px, 280px);
+  gap: 14px;
+}
+
+.public-team-logo {
+  width: 66px;
+  height: 66px;
+}
+
+.public-team-modality {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.public-team-modality span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.public-team-modality select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 10px;
+  font-weight: 850;
+}
+
+.public-team-games {
+  gap: 8px;
+}
+
+.public-team-game {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 72px;
+  border: 1px solid #eeeeee;
+  background: #fbfbfb;
+  padding: 10px 12px;
+}
+
+.public-team-game-body {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.public-team-game-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.public-team-game-meta strong,
+.public-team-game-meta span,
+.public-team-game-meta small {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.public-team-game-meta strong {
+  background: var(--soft-blue);
+  color: var(--blue);
+  font-size: 0.82rem;
+}
+
+.public-team-game-meta span {
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.82rem;
+}
+
+.public-team-game-meta small {
+  background: #f2f2f2;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.public-team-game-versus {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.public-team-game-versus strong {
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.public-team-game-versus span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  white-space: normal;
 }
 
 .public-brackets-board {
@@ -2087,6 +2249,14 @@ button:disabled {
 
   .public-control-panel .secondary-button {
     grid-column: auto;
+  }
+
+  .public-team-card-head {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .public-team-modality {
+    grid-column: 1 / -1;
   }
 
   .upcoming-head,
