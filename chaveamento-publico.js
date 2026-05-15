@@ -42,7 +42,7 @@ const GAME_DEPENDENCIES = BRACKET_DEFINITIONS.reduce((dependencies, bracket) => 
 let schedule = [...localSchedule];
 let records = {};
 let activeModalityFilter = "all";
-let activeTeamFilter = TEAM_OPTIONS[0]?.id || "all";
+let activeTeamFilter = "all";
 let activeTeamModalityFilter = "all";
 
 const els = {
@@ -375,16 +375,12 @@ function renderControls() {
 
 function renderTeamSummary() {
   if (!els.teamSummary) return;
-  const selectedTeam = teamOption(activeTeamFilter) || TEAM_OPTIONS[0];
-  if (!selectedTeam) {
-    els.teamSummary.innerHTML = `<section class="public-empty-state">Nenhuma atlética encontrada.</section>`;
-    return;
-  }
+  const selectedTeam = teamOption(activeTeamFilter);
   els.teamSummary.innerHTML = `
     <div class="public-team-buttons" aria-label="Escolher atlética">
       ${TEAM_OPTIONS.map(renderTeamButton).join("")}
     </div>
-    ${renderTeamSummaryCard(selectedTeam)}
+    ${selectedTeam ? renderTeamSummaryCard(selectedTeam) : ""}
   `;
 }
 
@@ -392,9 +388,8 @@ function renderTeamButton(team) {
   const logo = teamLogoCandidates(team.name);
   const activeClass = team.id === activeTeamFilter ? "active" : "";
   return `
-    <button class="public-team-button ${activeClass}" type="button" data-team="${escapeHtml(team.id)}" aria-pressed="${team.id === activeTeamFilter}">
+    <button class="public-team-button ${activeClass}" type="button" data-team="${escapeHtml(team.id)}" aria-label="${escapeHtml(team.name)}" title="${escapeHtml(team.name)}" aria-pressed="${team.id === activeTeamFilter}">
       ${logo ? `<img ${imageAttributes("public-team-button-logo", logo)}>` : `<span class="public-team-button-logo fallback">${escapeHtml(teamInitials(team.name))}</span>`}
-      <span>${escapeHtml(team.name)}</span>
     </button>
   `;
 }
@@ -577,7 +572,7 @@ els.modalitySelect.addEventListener("change", (event) => {
 els.teamSummary.addEventListener("click", (event) => {
   const button = event.target.closest("[data-team]");
   if (!button) return;
-  activeTeamFilter = button.dataset.team;
+  activeTeamFilter = activeTeamFilter === button.dataset.team ? "all" : button.dataset.team;
   activeTeamModalityFilter = "all";
   renderBrackets();
 });

@@ -238,6 +238,11 @@ h1 {
   background: #f5f4f7;
 }
 
+.public-bracket-page .brand-mark {
+  width: 72px;
+  height: 72px;
+}
+
 .public-bracket-shell {
   display: grid;
   gap: 14px;
@@ -421,6 +426,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: center;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
@@ -430,13 +436,14 @@ h1 {
 .public-team-button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 48px;
+  justify-content: center;
+  width: 58px;
+  min-height: 58px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
   color: var(--ink);
-  padding: 6px 12px 6px 8px;
+  padding: 6px;
   font-weight: 900;
 }
 
@@ -447,8 +454,8 @@ h1 {
 }
 
 .public-team-button-logo {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
 }
 
