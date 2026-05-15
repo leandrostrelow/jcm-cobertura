@@ -276,7 +276,7 @@ h1 {
 
 .public-team-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin: 0 auto;
   width: min(1480px, 100%);
@@ -284,14 +284,19 @@ h1 {
 
 .public-team-card {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
   padding: 10px;
+}
+
+.public-team-card-head {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
 }
 
 .public-team-logo {
@@ -322,31 +327,74 @@ h1 {
 }
 
 .public-team-card-main span,
-.public-team-metrics span {
+.public-team-game span,
+.public-team-game em {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 850;
 }
 
-.public-team-metrics {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.public-team-games {
+  display: grid;
   gap: 6px;
 }
 
-.public-team-metrics span {
-  display: inline-flex;
+.public-team-game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 4px;
-  min-height: 26px;
-  border-radius: 999px;
+  gap: 10px;
+  min-height: 46px;
+  border-radius: 8px;
   background: #f7f7f7;
-  padding: 0 8px;
+  padding: 8px 10px;
 }
 
-.public-team-metrics b {
-  color: var(--blue);
+.public-team-game > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.public-team-game strong {
+  min-width: 0;
+  font-size: 0.86rem;
+  line-height: 1.15;
+}
+
+.public-team-game span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-team-game em {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  padding: 0 9px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.public-team-game.done em {
+  background: var(--soft-green);
+  color: var(--green);
+}
+
+.public-team-game.pending em {
+  background: var(--soft-amber);
+  color: #b45309;
+}
+
+.public-team-game-empty {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 850;
 }
 
 .public-empty-state {
@@ -358,6 +406,10 @@ h1 {
   background: #fff;
   color: var(--muted);
   font-weight: 850;
+}
+
+.public-team-summary .public-empty-state {
+  grid-column: 1 / -1;
 }
 
 .public-brackets-board {
@@ -2142,7 +2194,7 @@ button:disabled {
 }
 
 @media (max-width: 480px) {
-  .public-team-card {
+  .public-team-card-head {
     grid-template-columns: 50px minmax(0, 1fr);
   }
 
@@ -2151,9 +2203,13 @@ button:disabled {
     height: 50px;
   }
 
-  .public-team-metrics {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
+  .public-team-game {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .public-team-game em {
+    justify-self: start;
   }
 
   .match-meta,

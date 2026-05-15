@@ -298,43 +298,63 @@ function bestPhaseLabel(phases) {
   return sorted[0] ? titleCaseWords(sorted[0]) : "Sem jogo";
 }
 
-function teamStats(option) {
-  const stats = {
-    played: 0,
-    wins: 0,
-    losses: 0,
-    pending: 0,
-    phases: [],
-    pendingPhases: []
-  };
-  const ids = [...new Set(BRACKET_DEFINITIONS.flatMap(bracketMatchIds))];
+function sortGameDateValue(item) {
+  const dateParts = normalizeText(item.date).split("/");
+  const timeParts = normalizeText(item.time).split(":");
+  const day = Number(dateParts[0]) || 0;
+  const month = Number(dateParts[1]) || 0;
+  const year = Number(dateParts[2]) || 2026;
+  const hour = Number(timeParts[0]) || 0;
+  const minute = Number(timeParts[1]) || 0;
+  return new Date(year, month - 1, day, hour, minute).getTime();
+}
 
-  ids.forEach((id) => {
-    const item = resolveItemTeams(getItemById(id));
-    if (!itemHasTeam(item, option)) return;
-    const data = record(id);
-    const winner = winnerForMatch(id);
-    const complete = hasCompleteScore(data) && winner;
-    stats.phases.push(item.phase);
+function bracketTitleForMatch(id) {
+  return BRACKET_DEFINITIONS.find((bracket) => bracketMatchIds(bracket).includes(id))?.title || "";
+}
 
-    if (complete) {
-      stats.played += 1;
-      if (teamMatchesOption(winner, option)) stats.wins += 1;
-      else stats.losses += 1;
-      return;
-    }
+function activeModalityBrackets() {
+  return activeModalityFilter === "all"
+    ? BRACKET_DEFINITIONS
+    : BRACKET_DEFINITIONS.filter((bracket) => bracket.id === activeModalityFilter);
+}
 
-    stats.pending += 1;
-    stats.pendingPhases.push(item.phase);
-  });
+function teamGames(option, brackets = BRACKET_DEFINITIONS) {
+  const ids = [...new Set(brackets.flatMap(bracketMatchIds))];
+  return ids
+    .map((id) => {
+      const item = resolveItemTeams(getItemById(id));
+      if (!itemHasTeam(item, option)) return null;
+      const data = record(id);
+      const isTeamA = teamMatchesOption(item.teamA, option);
+      const opponent = isTeamA ? item.teamB : item.teamA;
+      const scoreOwn = isTeamA ? data.scoreA : data.scoreB;
+      const scoreOpponent = isTeamA ? data.scoreB : data.scoreA;
+      const scoreReady = hasCompleteScore(data);
+      return {
+        ...item,
+        modalityTitle: bracketTitleForMatch(id),
+        opponent,
+        scoreOwn,
+        scoreOpponent,
+        scoreReady,
+        resultStatus: scoreReady ? `${normalizeText(scoreOwn)} x ${normalizeText(scoreOpponent)}` : statusForRecord(data)
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => sortGameDateValue(a) - sortGameDateValue(b));
+}
 
-  const activePhase = stats.pending
-    ? bestPhaseLabel(stats.pendingPhases)
-    : stats.losses && !stats.pending
-      ? "Encerrado"
-      : bestPhaseLabel(stats.phases);
+function publicGameLabel(game) {
+  return [
+    `${shortDate(game.date)} ${game.time}`.trim(),
+    titleCaseWords(game.modalityTitle || game.modality),
+    titleCaseWords(game.phase)
+  ].filter(Boolean).join(" · ");
+}
 
-  return { ...stats, activePhase };
+function gameCountLabel(total) {
+  return total === 1 ? "1 jogo no chaveamento" : `${total} jogos no chaveamento`;
 }
 
 function renderControls() {
@@ -358,28 +378,44 @@ function renderControls() {
 
 function renderTeamSummary() {
   if (!els.teamSummary) return;
+  const modalityBrackets = activeModalityBrackets();
   const teams = activeTeamFilter === "all"
-    ? TEAM_OPTIONS
+    ? TEAM_OPTIONS.filter((team) => teamGames(team, modalityBrackets).length)
     : TEAM_OPTIONS.filter((team) => team.id === activeTeamFilter);
-  els.teamSummary.innerHTML = teams.map(renderTeamSummaryCard).join("");
+  els.teamSummary.innerHTML = teams.length
+    ? teams.map((team) => renderTeamSummaryCard(team, modalityBrackets)).join("")
+    : `<section class="public-empty-state">Nenhuma atlética encontrada para esses filtros.</section>`;
 }
 
-function renderTeamSummaryCard(team) {
-  const stats = teamStats(team);
+function renderTeamSummaryCard(team, brackets) {
+  const games = teamGames(team, brackets);
   const logo = teamLogoCandidates(team.name);
   return `
     <article class="public-team-card">
-      ${logo ? `<img ${imageAttributes("public-team-logo", logo)}>` : `<span class="public-team-logo fallback">${escapeHtml(teamInitials(team.name))}</span>`}
-      <div class="public-team-card-main">
-        <strong>${escapeHtml(team.name)}</strong>
-        <span>Fase: ${escapeHtml(stats.activePhase)}</span>
-      </div>
-      <div class="public-team-metrics">
-        <span><b>${stats.wins}</b> vitÃ³rias</span>
-        <span><b>${stats.losses}</b> derrotas</span>
-        <span><b>${stats.pending}</b> pendentes</span>
+      <header class="public-team-card-head">
+        ${logo ? `<img ${imageAttributes("public-team-logo", logo)}>` : `<span class="public-team-logo fallback">${escapeHtml(teamInitials(team.name))}</span>`}
+        <div class="public-team-card-main">
+          <strong>${escapeHtml(team.name)}</strong>
+          <span>${games.length ? gameCountLabel(games.length) : "Sem jogos no chaveamento"}</span>
+        </div>
+      </header>
+      <div class="public-team-games">
+        ${games.length ? games.map(renderTeamGame).join("") : `<span class="public-team-game-empty">Nenhum jogo encontrado.</span>`}
       </div>
     </article>
+  `;
+}
+
+function renderTeamGame(game) {
+  const statusClass = game.scoreReady ? "done" : "pending";
+  return `
+    <div class="public-team-game ${statusClass}">
+      <div>
+        <strong>${escapeHtml(publicGameLabel(game))}</strong>
+        <span>x ${escapeHtml(game.opponent)}</span>
+      </div>
+      <em>${escapeHtml(game.resultStatus)}</em>
+    </div>
   `;
 }
 
@@ -387,8 +423,7 @@ function renderBrackets() {
   renderControls();
   renderTeamSummary();
   const selectedTeam = teamOption(activeTeamFilter);
-  const brackets = BRACKET_DEFINITIONS
-    .filter((bracket) => activeModalityFilter === "all" || bracket.id === activeModalityFilter)
+  const brackets = activeModalityBrackets()
     .filter((bracket) => activeTeamFilter === "all" || bracketHasTeam(bracket, selectedTeam));
   els.board.innerHTML = brackets.length
     ? brackets.map(renderBracketCard).join("")
