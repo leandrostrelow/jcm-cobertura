@@ -2197,7 +2197,7 @@ async function drawStory(type, item, data) {
   }
 
   const logoSize = isResult ? 345 : isPhotos ? 360 : 370;
-  const logoY = isResult ? 820 : isPhotos ? 980 : 805;
+  const logoY = isResult ? 895 : isPhotos ? 980 : 805;
   const logoAX = 315;
   const logoBX = 765;
   const logoA = teamLogoCandidates(item.teamA);
@@ -2231,8 +2231,8 @@ async function drawStory(type, item, data) {
   drawVersusStory(ctx, logoY);
 
   if (isResult) {
-    drawScoreNumber(ctx, data.scoreA, logoAX, 1135, loserOpacity(data, "A"));
-    drawScoreNumber(ctx, data.scoreB, logoBX, 1135, loserOpacity(data, "B"));
+    drawScoreNumber(ctx, data.scoreA, logoAX, 1210, loserOpacity(data, "A"));
+    drawScoreNumber(ctx, data.scoreB, logoBX, 1210, loserOpacity(data, "B"));
   } else if (isPhotos) {
     // Photos art keeps only the title, sport and team crests.
   } else {
