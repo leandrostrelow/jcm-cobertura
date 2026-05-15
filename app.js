@@ -1800,8 +1800,8 @@ function dramaticTitleConfig(type) {
     return {
       primary: "FOTOS",
       secondary: "DISPON\u00cdVEIS",
-      primaryY: 505,
-      secondaryY: 615,
+      primaryY: 480,
+      secondaryY: 590,
       primarySize: 170,
       secondarySize: 118,
       primaryMax: 760,
@@ -1814,9 +1814,9 @@ function dramaticTitleConfig(type) {
       primary: "PLACAR DO",
       secondary: "JOGO",
       primaryY: 420,
-      secondaryY: 520,
-      primarySize: 112,
-      secondarySize: 108,
+      secondaryY: 510,
+      primarySize: 98,
+      secondarySize: 94,
       primaryMax: 880,
       secondaryMax: 620
     };
@@ -1825,8 +1825,8 @@ function dramaticTitleConfig(type) {
   return {
     primary: "IN\u00cdCIO DO",
     secondary: "JOGO",
-    primaryY: 505,
-    secondaryY: 610,
+    primaryY: 485,
+    secondaryY: 590,
     primarySize: 116,
     secondarySize: 112,
     primaryMax: 880,
