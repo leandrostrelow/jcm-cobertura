@@ -70,6 +70,8 @@ let notificationAudioContext = null;
 let youtubeDateFilter = "all";
 let youtubeSelectedIds = readYoutubeSelection();
 const saveTimers = {};
+const pendingRemoteSaveIds = new Set();
+let lastLocalEditAt = 0;
 
 const els = {
   viewTabs: document.querySelector(".view-tabs"),
@@ -2479,7 +2481,8 @@ function selectGameOffset(offset, message) {
 function shouldPauseRemoteRefresh() {
   const active = document.activeElement;
   const editingField = active && els.matchCard.contains(active) && ["INPUT", "SELECT", "TEXTAREA"].includes(active.tagName);
-  return savingRemote || editingField;
+  const recentEdit = Date.now() - lastLocalEditAt < 1800;
+  return savingRemote || editingField || pendingRemoteSaveIds.size > 0 || recentEdit;
 }
 
 function startRemotePolling() {
@@ -2504,6 +2507,14 @@ async function loadRemoteData(options = {}) {
       if (row.ID) acc[row.ID] = rowToRecord(row);
       return acc;
     }, {});
+    const protectedIds = new Set(pendingRemoteSaveIds);
+    const active = document.activeElement;
+    if (active && els.matchCard.contains(active) && ["INPUT", "SELECT", "TEXTAREA"].includes(active.tagName) && selectedId) {
+      protectedIds.add(selectedId);
+    }
+    protectedIds.forEach((id) => {
+      if (state[id]) nextState[id] = state[id];
+    });
     detectRemoteNotifications(nextSchedule, nextState);
     schedule = mergeRemoteSchedule(nextSchedule);
     state = nextState;
@@ -2521,8 +2532,13 @@ async function loadRemoteData(options = {}) {
 }
 
 function queueSave(id, immediate = false) {
+  lastLocalEditAt = Date.now();
+  pendingRemoteSaveIds.add(id);
   saveState();
-  if (!remoteReady) return;
+  if (!remoteReady) {
+    pendingRemoteSaveIds.delete(id);
+    return;
+  }
   window.clearTimeout(saveTimers[id]);
   saveTimers[id] = window.setTimeout(() => saveRemoteRecord(id), immediate ? 0 : 650);
 }
@@ -2550,6 +2566,8 @@ async function saveRemoteRecord(id) {
     showToast("Não consegui salvar na planilha. Confira a conexão ou a implantação do Apps Script.");
   } finally {
     savingRemote = false;
+    pendingRemoteSaveIds.delete(id);
+    delete saveTimers[id];
   }
 }
 
@@ -2703,6 +2721,12 @@ function bindEvents() {
       render();
     }
     if (event.target.dataset.field) {
+      const field = event.target.dataset.field;
+      data[field] = event.target.value;
+      if (field === "scoreA" || field === "scoreB") {
+        syncScoreCompletion(data);
+      }
+      saveState();
       queueSave(item.id, true);
       render();
     }
