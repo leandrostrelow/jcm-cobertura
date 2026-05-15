@@ -1822,11 +1822,24 @@ function dramaticTitleConfig(type) {
     };
   }
 
+  if (type === "upcoming") {
+    return {
+      primary: "PR\u00d3XIMOS",
+      secondary: "JOGOS",
+      primaryY: 370,
+      secondaryY: 475,
+      primarySize: 108,
+      secondarySize: 112,
+      primaryMax: 900,
+      secondaryMax: 660
+    };
+  }
+
   return {
     primary: "IN\u00cdCIO DO",
     secondary: "JOGO",
-    primaryY: 485,
-    secondaryY: 590,
+    primaryY: 465,
+    secondaryY: 570,
     primarySize: 116,
     secondarySize: 112,
     primaryMax: 880,
@@ -2267,8 +2280,8 @@ async function drawUpcomingStory(batch) {
   ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
   ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
 
-  drawPositionedText(ctx, "PRÓXIMOS JOGOS", STORY_WIDTH / 2, 440, 72, 900);
-  drawPositionedText(ctx, batch.label.toUpperCase(), STORY_WIDTH / 2, 535, 42, 520, { color: "#ffffff" });
+  drawDramaticStoryTitle(ctx, "upcoming");
+  drawPositionedText(ctx, batch.label.toUpperCase(), STORY_WIDTH / 2, 575, 42, 520, { color: "#ffffff" });
 
   const gap = games.length <= 2 ? 260 : 235;
   const startY = games.length <= 2 ? 800 : games.length === 3 ? 735 : 685;
