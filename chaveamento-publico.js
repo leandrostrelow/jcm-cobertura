@@ -10,6 +10,14 @@ const TEAM_LOGOS = {
   "UVV": logoSources("uvv.png"),
   "UNESC": logoSources("unesc.png")
 };
+const TEAM_OPTIONS = [
+  { id: "multivix-vitoria", name: "Multivix Vitória", aliases: ["Multivix Vitória", "Multivix Vitoria"] },
+  { id: "multivix-cachoeiro", name: "Multivix Cachoeiro", aliases: ["Multivix Cachoeiro"] },
+  { id: "ufes", name: "UFES", aliases: ["UFES"] },
+  { id: "emescam", name: "EMESCAM", aliases: ["EMESCAM"] },
+  { id: "uvv", name: "UVV", aliases: ["UVV"] },
+  { id: "unesc", name: "UNESC", aliases: ["UNESC"] }
+];
 const BRACKET_DEFINITIONS = [
   { id: "futsal-masculino", title: "Futsal Masculino", qf1: "JCM-013", qf2: "JCM-001", sf1: "JCM-018", sf2: "JCM-020", final: "JCM-053" },
   { id: "futsal-feminino", title: "Futsal Feminino", qf1: "JCM-002", qf2: "JCM-012", sf1: "JCM-021", sf2: "JCM-019", final: "JCM-051" },
@@ -33,11 +41,14 @@ const GAME_DEPENDENCIES = BRACKET_DEFINITIONS.reduce((dependencies, bracket) => 
 
 let schedule = [...localSchedule];
 let records = {};
-let activeFilter = "all";
+let activeModalityFilter = "all";
+let activeTeamFilter = "all";
 
 const els = {
   status: document.querySelector("#publicSyncStatus"),
-  filters: document.querySelector("#publicBracketFilters"),
+  modalitySelect: document.querySelector("#publicModalitySelect"),
+  teamSelect: document.querySelector("#publicTeamSelect"),
+  teamSummary: document.querySelector("#publicTeamSummary"),
   board: document.querySelector("#publicBracketsBoard"),
   refresh: document.querySelector("#refreshBrackets")
 };
@@ -74,6 +85,24 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+function canonicalText(value) {
+  return cleanDisplayText(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function teamOption(id) {
+  return TEAM_OPTIONS.find((team) => team.id === id);
+}
+
+function teamMatchesOption(name, option) {
+  if (!option || !normalizeText(name) || /^Vencedor/i.test(normalizeText(name))) return false;
+  const target = canonicalText(name);
+  return option.aliases.some((alias) => canonicalText(alias) === target);
 }
 
 function shortDate(value) {
@@ -236,26 +265,134 @@ function formatTeamName(name) {
 }
 
 function bracketSummary(bracket) {
-  const ids = [bracket.qf1, bracket.qf2, bracket.sf1, bracket.sf2, bracket.final].filter(Boolean);
+  const ids = bracketMatchIds(bracket);
   const done = ids.filter((id) => winnerForMatch(id)).length;
   return `${done} de ${ids.length} definidos`;
 }
 
-function renderFilters() {
-  els.filters.innerHTML = [
-    `<button class="${activeFilter === "all" ? "active" : ""}" type="button" data-filter="all">Todos</button>`,
+function bracketMatchIds(bracket) {
+  return [bracket.qf1, bracket.qf2, bracket.sf1, bracket.sf2, bracket.final].filter(Boolean);
+}
+
+function itemHasTeam(item, option) {
+  if (!item || !option) return false;
+  return teamMatchesOption(item.teamA, option) || teamMatchesOption(item.teamB, option);
+}
+
+function bracketHasTeam(bracket, option) {
+  return bracketMatchIds(bracket).some((id) => itemHasTeam(resolveItemTeams(getItemById(id)), option));
+}
+
+function phaseLevel(phase) {
+  const text = canonicalText(phase);
+  if (text.includes("final") && !text.includes("quarta") && !text.includes("semi")) return 4;
+  if (text.includes("semi")) return 3;
+  if (text.includes("quarta")) return 2;
+  return 1;
+}
+
+function bestPhaseLabel(phases) {
+  const sorted = phases
+    .filter(Boolean)
+    .sort((a, b) => phaseLevel(b) - phaseLevel(a));
+  return sorted[0] ? titleCaseWords(sorted[0]) : "Sem jogo";
+}
+
+function teamStats(option) {
+  const stats = {
+    played: 0,
+    wins: 0,
+    losses: 0,
+    pending: 0,
+    phases: [],
+    pendingPhases: []
+  };
+  const ids = [...new Set(BRACKET_DEFINITIONS.flatMap(bracketMatchIds))];
+
+  ids.forEach((id) => {
+    const item = resolveItemTeams(getItemById(id));
+    if (!itemHasTeam(item, option)) return;
+    const data = record(id);
+    const winner = winnerForMatch(id);
+    const complete = hasCompleteScore(data) && winner;
+    stats.phases.push(item.phase);
+
+    if (complete) {
+      stats.played += 1;
+      if (teamMatchesOption(winner, option)) stats.wins += 1;
+      else stats.losses += 1;
+      return;
+    }
+
+    stats.pending += 1;
+    stats.pendingPhases.push(item.phase);
+  });
+
+  const activePhase = stats.pending
+    ? bestPhaseLabel(stats.pendingPhases)
+    : stats.losses && !stats.pending
+      ? "Encerrado"
+      : bestPhaseLabel(stats.phases);
+
+  return { ...stats, activePhase };
+}
+
+function renderControls() {
+  if (!els.modalitySelect || !els.teamSelect) return;
+  els.modalitySelect.innerHTML = [
+    `<option value="all">Todas as modalidades</option>`,
     ...BRACKET_DEFINITIONS.map((bracket) => (
-      `<button class="${activeFilter === bracket.id ? "active" : ""}" type="button" data-filter="${escapeHtml(bracket.id)}">${escapeHtml(bracket.title)}</button>`
+      `<option value="${escapeHtml(bracket.id)}">${escapeHtml(bracket.title)}</option>`
     ))
   ].join("");
+  els.modalitySelect.value = activeModalityFilter;
+
+  els.teamSelect.innerHTML = [
+    `<option value="all">Todas as atlÃ©ticas</option>`,
+    ...TEAM_OPTIONS.map((team) => (
+      `<option value="${escapeHtml(team.id)}">${escapeHtml(team.name)}</option>`
+    ))
+  ].join("");
+  els.teamSelect.value = activeTeamFilter;
+}
+
+function renderTeamSummary() {
+  if (!els.teamSummary) return;
+  const teams = activeTeamFilter === "all"
+    ? TEAM_OPTIONS
+    : TEAM_OPTIONS.filter((team) => team.id === activeTeamFilter);
+  els.teamSummary.innerHTML = teams.map(renderTeamSummaryCard).join("");
+}
+
+function renderTeamSummaryCard(team) {
+  const stats = teamStats(team);
+  const logo = teamLogoCandidates(team.name);
+  return `
+    <article class="public-team-card">
+      ${logo ? `<img ${imageAttributes("public-team-logo", logo)}>` : `<span class="public-team-logo fallback">${escapeHtml(teamInitials(team.name))}</span>`}
+      <div class="public-team-card-main">
+        <strong>${escapeHtml(team.name)}</strong>
+        <span>Fase: ${escapeHtml(stats.activePhase)}</span>
+      </div>
+      <div class="public-team-metrics">
+        <span><b>${stats.wins}</b> vitÃ³rias</span>
+        <span><b>${stats.losses}</b> derrotas</span>
+        <span><b>${stats.pending}</b> pendentes</span>
+      </div>
+    </article>
+  `;
 }
 
 function renderBrackets() {
-  renderFilters();
-  const brackets = activeFilter === "all"
-    ? BRACKET_DEFINITIONS
-    : BRACKET_DEFINITIONS.filter((bracket) => bracket.id === activeFilter);
-  els.board.innerHTML = brackets.map(renderBracketCard).join("");
+  renderControls();
+  renderTeamSummary();
+  const selectedTeam = teamOption(activeTeamFilter);
+  const brackets = BRACKET_DEFINITIONS
+    .filter((bracket) => activeModalityFilter === "all" || bracket.id === activeModalityFilter)
+    .filter((bracket) => activeTeamFilter === "all" || bracketHasTeam(bracket, selectedTeam));
+  els.board.innerHTML = brackets.length
+    ? brackets.map(renderBracketCard).join("")
+    : `<section class="public-empty-state">Nenhum chaveamento encontrado para esses filtros.</section>`;
   if (window.lucide) lucide.createIcons();
 }
 
@@ -355,10 +492,13 @@ async function loadRemoteData() {
   }
 }
 
-els.filters.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-filter]");
-  if (!button) return;
-  activeFilter = button.dataset.filter;
+els.modalitySelect.addEventListener("change", (event) => {
+  activeModalityFilter = event.target.value;
+  renderBrackets();
+});
+
+els.teamSelect.addEventListener("change", (event) => {
+  activeTeamFilter = event.target.value;
   renderBrackets();
 });
 

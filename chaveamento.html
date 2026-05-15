@@ -28,18 +28,22 @@
     </header>
 
     <main class="app-shell public-bracket-shell">
-      <section class="public-hero">
-        <div>
-          <p>Visualização pública</p>
-          <h2>Mata-matas atualizados pela cobertura</h2>
-        </div>
+      <section class="public-control-panel" aria-label="Filtros do chaveamento">
+        <label class="public-select-field">
+          <span>Modalidade</span>
+          <select id="publicModalitySelect"></select>
+        </label>
+        <label class="public-select-field">
+          <span>Atlética</span>
+          <select id="publicTeamSelect"></select>
+        </label>
         <button id="refreshBrackets" class="secondary-button" type="button">
           <i data-lucide="refresh-cw"></i>
           <span>Atualizar</span>
         </button>
       </section>
 
-      <section id="publicBracketFilters" class="public-bracket-filters" aria-label="Filtrar chaveamento"></section>
+      <section id="publicTeamSummary" class="public-team-summary" aria-live="polite"></section>
       <section id="publicBracketsBoard" class="brackets-board public-brackets-board" aria-live="polite"></section>
     </main>
 
