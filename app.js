@@ -1795,7 +1795,83 @@ function drawStoryText(ctx, text, y, size, maxWidth) {
   ctx.shadowOffsetY = 0;
 }
 
-function drawPhotosAvailableTitle(ctx) {
+function dramaticTitleConfig(type) {
+  if (type === "photos") {
+    return {
+      primary: "FOTOS",
+      secondary: "DISPON\u00cdVEIS",
+      primaryY: 505,
+      secondaryY: 615,
+      primarySize: 170,
+      secondarySize: 118,
+      primaryMax: 760,
+      secondaryMax: 940
+    };
+  }
+
+  if (type === "result") {
+    return {
+      primary: "PLACAR DO",
+      secondary: "JOGO",
+      primaryY: 420,
+      secondaryY: 520,
+      primarySize: 112,
+      secondarySize: 108,
+      primaryMax: 880,
+      secondaryMax: 620
+    };
+  }
+
+  return {
+    primary: "IN\u00cdCIO DO",
+    secondary: "JOGO",
+    primaryY: 505,
+    secondaryY: 610,
+    primarySize: 116,
+    secondarySize: 112,
+    primaryMax: 880,
+    secondaryMax: 620
+  };
+}
+
+function fitTitleFont(ctx, text, size, minSize, maxWidth, fontForSize) {
+  let fontSize = size;
+  do {
+    ctx.font = fontForSize(fontSize);
+    if (ctx.measureText(text).width <= maxWidth) break;
+    fontSize -= 4;
+  } while (fontSize > minSize);
+  return fontSize;
+}
+
+function drawBrushTails(ctx, width, size) {
+  const left = -width / 2;
+  const right = width / 2;
+  const y = size * 0.08;
+  ctx.fillStyle = "#7c2cff";
+  ctx.globalAlpha = 0.92;
+  ctx.beginPath();
+  ctx.moveTo(left + 24, y - size * 0.34);
+  ctx.lineTo(left - 62, y - size * 0.08);
+  ctx.lineTo(left + 42, y + size * 0.03);
+  ctx.lineTo(left - 42, y + size * 0.28);
+  ctx.lineTo(left + 72, y + size * 0.14);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(right - 22, y - size * 0.32);
+  ctx.lineTo(right + 70, y - size * 0.03);
+  ctx.lineTo(right - 40, y + size * 0.06);
+  ctx.lineTo(right + 46, y + size * 0.26);
+  ctx.lineTo(right - 78, y + size * 0.17);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function drawDramaticStoryTitle(ctx, type) {
+  const config = dramaticTitleConfig(type);
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -1803,47 +1879,48 @@ function drawPhotosAvailableTitle(ctx) {
   ctx.shadowBlur = 24;
   ctx.shadowOffsetY = 12;
 
-  let titleSize = 166;
-  do {
-    ctx.font = `900 ${titleSize}px Impact, Haettenschweiler, "Arial Narrow Bold", "Arial Black", sans-serif`;
-    if (ctx.measureText("FOTOS").width <= 760) break;
-    titleSize -= 4;
-  } while (titleSize > 110);
+  const titleFont = (size) => `900 ${size}px Impact, Haettenschweiler, "Arial Narrow Bold", "Arial Black", sans-serif`;
+  const titleSize = fitTitleFont(ctx, config.primary, config.primarySize, 72, config.primaryMax, titleFont);
 
   ctx.save();
-  ctx.translate(STORY_WIDTH / 2, 510);
+  ctx.translate(STORY_WIDTH / 2, config.primaryY);
   ctx.transform(1, -0.03, -0.16, 1, 0, 0);
   ctx.lineJoin = "round";
   ctx.lineWidth = 14;
+  ctx.font = titleFont(titleSize);
   ctx.strokeStyle = "rgba(12, 6, 24, 0.72)";
-  ctx.strokeText("FOTOS", 0, 0);
+  ctx.strokeText(config.primary, 0, 0);
   const whiteGradient = ctx.createLinearGradient(0, -85, 0, 80);
   whiteGradient.addColorStop(0, "#ffffff");
   whiteGradient.addColorStop(0.55, "#f7f7f7");
   whiteGradient.addColorStop(1, "#cfcfd6");
   ctx.fillStyle = whiteGradient;
-  ctx.fillText("FOTOS", 0, 0);
+  ctx.fillText(config.primary, 0, 0);
   ctx.restore();
 
-  let subtitleSize = 104;
-  do {
-    ctx.font = `900 italic ${subtitleSize}px "Trebuchet MS", "Arial Black", Impact, sans-serif`;
-    if (ctx.measureText("DISPONÍVEIS").width <= 900) break;
-    subtitleSize -= 4;
-  } while (subtitleSize > 72);
+  const subtitleFont = (size) => `900 italic ${size}px "Trebuchet MS", "Arial Black", Impact, sans-serif`;
+  const subtitleSize = fitTitleFont(ctx, config.secondary, config.secondarySize, 64, config.secondaryMax, subtitleFont);
+  ctx.font = subtitleFont(subtitleSize);
+  const subtitleWidth = ctx.measureText(config.secondary).width;
 
   ctx.save();
-  ctx.translate(STORY_WIDTH / 2, 610);
-  ctx.rotate(-0.045);
+  ctx.translate(STORY_WIDTH / 2, config.secondaryY);
+  ctx.rotate(-0.065);
+  ctx.scale(1.08, 1);
   ctx.lineJoin = "round";
-  ctx.lineWidth = 10;
-  ctx.strokeStyle = "rgba(14, 2, 30, 0.9)";
-  ctx.strokeText("DISPONÍVEIS", 0, 0);
-  ctx.fillStyle = "#8b3dff";
-  ctx.fillText("DISPONÍVEIS", 0, 0);
+  ctx.font = subtitleFont(subtitleSize);
+  drawBrushTails(ctx, subtitleWidth, subtitleSize);
+  ctx.lineWidth = 12;
+  ctx.strokeStyle = "rgba(14, 2, 30, 0.94)";
+  ctx.strokeText(config.secondary, 0, 0);
+  ctx.fillStyle = "#7c2cff";
+  ctx.fillText(config.secondary, 0, 0);
+  ctx.globalAlpha = 0.58;
+  ctx.fillStyle = "#4a12b8";
+  ctx.fillText(config.secondary, 7, 7);
   ctx.globalAlpha = 0.7;
   ctx.fillStyle = "#c48cff";
-  ctx.fillText("DISPONÍVEIS", -3, -4);
+  ctx.fillText(config.secondary, -5, -5);
   ctx.restore();
   ctx.restore();
 }
@@ -2101,13 +2178,9 @@ async function drawStory(type, item, data) {
   const isResult = type === "result";
   const isPhotos = type === "photos";
   const titleY = isPhotos ? 555 : isResult ? 460 : 520;
-  if (isPhotos) {
-    drawPhotosAvailableTitle(ctx);
-  } else {
-    drawStoryText(ctx, storyLabel(type), titleY, isResult ? 70 : 74, 930);
-  }
+  drawDramaticStoryTitle(ctx, type);
   if (isResult || isPhotos) {
-    drawStoryModalityCompact(ctx, item, isPhotos ? 725 : 555, isPhotos ? 50 : 48);
+    drawStoryModalityCompact(ctx, item, isPhotos ? 735 : 625, isPhotos ? 50 : 48);
   }
 
   const logoSize = isResult ? 345 : isPhotos ? 360 : 370;
