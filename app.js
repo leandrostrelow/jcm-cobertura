@@ -1795,6 +1795,59 @@ function drawStoryText(ctx, text, y, size, maxWidth) {
   ctx.shadowOffsetY = 0;
 }
 
+function drawPhotosAvailableTitle(ctx) {
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.52)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 12;
+
+  let titleSize = 166;
+  do {
+    ctx.font = `900 ${titleSize}px Impact, Haettenschweiler, "Arial Narrow Bold", "Arial Black", sans-serif`;
+    if (ctx.measureText("FOTOS").width <= 760) break;
+    titleSize -= 4;
+  } while (titleSize > 110);
+
+  ctx.save();
+  ctx.translate(STORY_WIDTH / 2, 510);
+  ctx.transform(1, -0.03, -0.16, 1, 0, 0);
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = "rgba(12, 6, 24, 0.72)";
+  ctx.strokeText("FOTOS", 0, 0);
+  const whiteGradient = ctx.createLinearGradient(0, -85, 0, 80);
+  whiteGradient.addColorStop(0, "#ffffff");
+  whiteGradient.addColorStop(0.55, "#f7f7f7");
+  whiteGradient.addColorStop(1, "#cfcfd6");
+  ctx.fillStyle = whiteGradient;
+  ctx.fillText("FOTOS", 0, 0);
+  ctx.restore();
+
+  let subtitleSize = 104;
+  do {
+    ctx.font = `900 italic ${subtitleSize}px "Trebuchet MS", "Arial Black", Impact, sans-serif`;
+    if (ctx.measureText("DISPONÍVEIS").width <= 900) break;
+    subtitleSize -= 4;
+  } while (subtitleSize > 72);
+
+  ctx.save();
+  ctx.translate(STORY_WIDTH / 2, 610);
+  ctx.rotate(-0.045);
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = "rgba(14, 2, 30, 0.9)";
+  ctx.strokeText("DISPONÍVEIS", 0, 0);
+  ctx.fillStyle = "#8b3dff";
+  ctx.fillText("DISPONÍVEIS", 0, 0);
+  ctx.globalAlpha = 0.7;
+  ctx.fillStyle = "#c48cff";
+  ctx.fillText("DISPONÍVEIS", -3, -4);
+  ctx.restore();
+  ctx.restore();
+}
+
 function drawPositionedText(ctx, text, x, y, size, maxWidth, options = {}) {
   let fontSize = size;
   ctx.save();
@@ -2048,13 +2101,17 @@ async function drawStory(type, item, data) {
   const isResult = type === "result";
   const isPhotos = type === "photos";
   const titleY = isPhotos ? 555 : isResult ? 460 : 520;
-  drawStoryText(ctx, storyLabel(type), titleY, isResult ? 70 : 74, 930);
+  if (isPhotos) {
+    drawPhotosAvailableTitle(ctx);
+  } else {
+    drawStoryText(ctx, storyLabel(type), titleY, isResult ? 70 : 74, 930);
+  }
   if (isResult || isPhotos) {
-    drawStoryModalityCompact(ctx, item, isPhotos ? 650 : 555, 48);
+    drawStoryModalityCompact(ctx, item, isPhotos ? 725 : 555, isPhotos ? 50 : 48);
   }
 
   const logoSize = isResult ? 345 : isPhotos ? 360 : 370;
-  const logoY = isResult ? 820 : isPhotos ? 930 : 805;
+  const logoY = isResult ? 820 : isPhotos ? 980 : 805;
   const logoAX = 315;
   const logoBX = 765;
   const logoA = teamLogoCandidates(item.teamA);
