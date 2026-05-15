@@ -423,8 +423,8 @@ h1 {
 }
 
 .public-team-buttons {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   justify-content: center;
   border: 1px solid var(--line);
@@ -437,8 +437,9 @@ h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 58px;
-  min-height: 58px;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: 1;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
@@ -454,8 +455,10 @@ h1 {
 }
 
 .public-team-button-logo {
-  width: 44px;
-  height: 44px;
+  width: 100%;
+  height: 100%;
+  max-width: 46px;
+  max-height: 46px;
   object-fit: contain;
 }
 
@@ -2189,6 +2192,192 @@ button:disabled {
 }
 
 @media (max-width: 760px) {
+  .public-bracket-page .topbar {
+    position: static;
+    padding: 12px 14px;
+  }
+
+  .public-bracket-page .topbar-content {
+    display: grid;
+    grid-template-columns: minmax(92px, 118px) minmax(0, 1fr);
+    grid-template-areas:
+      "lotus brand"
+      "status status";
+    align-items: center;
+    gap: 10px 12px;
+  }
+
+  .public-bracket-page .lotus-mark {
+    grid-area: lotus;
+    order: 0;
+    width: 112px;
+    min-width: 0;
+    height: 38px;
+  }
+
+  .public-bracket-page .lotus-mark img {
+    max-height: 36px;
+  }
+
+  .public-bracket-page .brand {
+    grid-area: brand;
+    order: 0;
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 9px;
+    flex: none;
+  }
+
+  .public-bracket-page .brand-mark {
+    width: 46px;
+    height: 46px;
+  }
+
+  .public-bracket-page .brand p {
+    font-size: 0.68rem;
+    line-height: 1.05;
+  }
+
+  .public-bracket-page .brand h1 {
+    font-size: 1.2rem;
+    line-height: 1.05;
+  }
+
+  .public-bracket-page .sync-status {
+    grid-area: status;
+    order: 0;
+    width: 100%;
+    min-height: 34px;
+    border-radius: 8px;
+    font-size: 0.86rem;
+  }
+
+  .public-bracket-shell {
+    gap: 10px;
+    padding: 12px 10px 28px;
+  }
+
+  .public-control-panel {
+    gap: 9px;
+    padding: 12px;
+    box-shadow: 0 8px 20px rgba(20, 20, 20, 0.06);
+  }
+
+  .public-select-field {
+    gap: 5px;
+  }
+
+  .public-select-field select,
+  .public-control-panel .secondary-button {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .public-team-buttons {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    padding: 7px;
+  }
+
+  .public-team-button {
+    padding: 4px;
+  }
+
+  .public-team-button-logo {
+    max-width: 38px;
+    max-height: 38px;
+  }
+
+  .public-team-card {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .public-team-card-head {
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .public-team-logo {
+    width: 52px;
+    height: 52px;
+  }
+
+  .public-team-modality {
+    grid-column: 1 / -1;
+  }
+
+  .public-team-game {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    min-height: 0;
+    gap: 8px;
+  }
+
+  .public-team-game em {
+    justify-self: start;
+  }
+
+  .public-bracket-card {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .public-bracket-card .bracket-card-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .public-bracket-card .bracket-card-head p {
+    font-size: 0.66rem;
+  }
+
+  .public-bracket-card .bracket-card-head h2 {
+    font-size: 1.12rem;
+  }
+
+  .public-bracket-card .bracket-card-head > span {
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 0.74rem;
+  }
+
+  .public-bracket-card .bracket-column {
+    gap: 9px;
+  }
+
+  .public-bracket-card .bracket-column h3 {
+    min-height: 42px;
+    font-size: 1rem;
+  }
+
+  .public-bracket-card .bracket-match {
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .public-bracket-card .bracket-team {
+    grid-template-columns: 44px minmax(0, 1fr) 26px;
+    min-height: 52px;
+    gap: 8px;
+    padding: 6px;
+  }
+
+  .public-bracket-card .bracket-team-logo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .public-bracket-card .bracket-team strong {
+    font-size: 1rem;
+  }
+
+  .public-bracket-card .bracket-score {
+    min-width: 26px;
+  }
+
   .topbar-content {
     width: 100%;
     flex-wrap: wrap;
