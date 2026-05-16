@@ -339,6 +339,31 @@ h1 {
   font-weight: 850;
 }
 
+.public-team-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.public-team-stats span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #f7f7f7;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.public-team-stats strong {
+  margin-right: 4px;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
 .public-team-games {
   display: grid;
   gap: 6px;
@@ -2343,6 +2368,17 @@ button:disabled {
 
   .public-team-modality {
     grid-column: 1 / -1;
+  }
+
+  .public-team-stats {
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .public-team-stats span {
+    min-height: 24px;
+    padding: 0 8px;
+    font-size: 0.7rem;
   }
 
   .public-team-game {

@@ -413,6 +413,16 @@ function teamModalityOptions(games) {
   return options;
 }
 
+function teamStats(games) {
+  return games.reduce((stats, game) => {
+    if (!game.scoreReady) return stats;
+    stats.played += 1;
+    if (game.outcome === "win") stats.wins += 1;
+    if (game.outcome === "loss") stats.losses += 1;
+    return stats;
+  }, { played: 0, wins: 0, losses: 0 });
+}
+
 function renderTeamSummaryCard(team) {
   const allGames = teamGames(team);
   const filteredGames = activeTeamModalityFilter === "all"
@@ -420,6 +430,7 @@ function renderTeamSummaryCard(team) {
     : allGames.filter((game) => game.bracketId === activeTeamModalityFilter);
   const options = teamModalityOptions(allGames);
   const logo = teamLogoCandidates(team.name);
+  const stats = teamStats(allGames);
   return `
     <article class="public-team-card">
       <header class="public-team-card-head">
@@ -427,6 +438,11 @@ function renderTeamSummaryCard(team) {
         <div class="public-team-card-main">
           <strong>${escapeHtml(team.name)}</strong>
           <span>${allGames.length ? gameCountLabel(allGames.length) : "Sem jogos no chaveamento"}</span>
+          <div class="public-team-stats" aria-label="Resumo da atlética">
+            <span><strong>${stats.played}</strong> partidas jogadas</span>
+            <span><strong>${stats.wins}</strong> vitórias</span>
+            <span><strong>${stats.losses}</strong> derrotas</span>
+          </div>
         </div>
         <label class="public-team-modality">
           <span>Modalidade da atlética</span>
