@@ -20,11 +20,33 @@
       box-sizing: border-box;
     }
 
+    html {
+      width: 100%;
+      background: #000;
+      overflow-x: hidden;
+      scrollbar-width: none;
+    }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
+
     body {
       margin: 0;
       background: #000;
       color: #fff;
       font-family: Inter, Montserrat, Arial, sans-serif;
+      overflow-x: hidden;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    img,
+    svg {
+      max-width: 100%;
     }
 
     .jcm-page {
@@ -69,6 +91,7 @@
     .jcm-hero-actions {
       position: relative;
       z-index: 1;
+      min-width: 0;
     }
 
     .jcm-brand-row {
@@ -177,6 +200,7 @@
     .jcm-field {
       display: grid;
       gap: 7px;
+      min-width: 0;
     }
 
     .jcm-field label {
@@ -249,6 +273,7 @@
       background: var(--jcm-card);
       color: var(--jcm-text);
       box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+      min-width: 0;
     }
 
     .jcm-photo-top {
@@ -275,6 +300,7 @@
       display: flex;
       gap: 10px;
       align-items: center;
+      flex-wrap: wrap;
       margin: 0;
       font-size: 24px;
       line-height: 1.05;
@@ -342,6 +368,7 @@
       grid-template-columns: 1fr auto;
       gap: 10px;
       align-self: end;
+      min-width: 0;
     }
 
     .jcm-card-actions a,
@@ -406,43 +433,161 @@
 
     @media (max-width: 640px) {
       .jcm-page {
-        width: min(100% - 20px, 1160px);
-        padding-top: 12px;
+        width: 100%;
+        padding: 10px 10px 28px;
       }
 
       .jcm-hero {
-        padding: 24px 18px;
+        min-height: 0;
+        padding: 20px 16px;
         border-radius: 18px;
       }
 
-      .jcm-brand-row {
-        gap: 12px;
-        margin-bottom: 20px;
+      .jcm-kicker {
+        font-size: 11px;
+        margin-bottom: 6px;
       }
 
-      .jcm-brand-logo {
-        height: 46px;
-        max-width: 142px;
-      }
-
-      .jcm-brand-logo.jcm-mark {
-        max-width: 64px;
+      .jcm-hero h1 {
+        font-size: 31px;
+        line-height: 1;
       }
 
       .jcm-hero p {
+        margin-top: 12px;
+        font-size: 14px;
+        line-height: 1.42;
+      }
+
+      .jcm-hero-actions {
+        gap: 9px;
+      }
+
+      .jcm-button {
+        width: 100%;
+        min-height: 46px;
+        padding: 0 14px;
+        border-radius: 12px;
         font-size: 15px;
       }
 
       .jcm-toolbar {
-        padding: 14px;
+        gap: 10px;
+        margin: 14px 0 18px;
+        padding: 12px;
         border-radius: 16px;
+      }
+
+      .jcm-field input,
+      .jcm-field select,
+      .jcm-status {
+        height: 44px;
+        min-height: 44px;
+        font-size: 14px;
       }
 
       .jcm-section-title {
         display: grid;
+        gap: 6px;
+        margin: 20px 0 12px;
+      }
+
+      .jcm-section-title h2 {
+        font-size: 31px;
+      }
+
+      .jcm-section-title span {
+        font-size: 14px;
       }
 
       .jcm-photo-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .jcm-photo-card {
+        min-height: 0;
+        gap: 11px;
+        padding: 14px;
+        border-radius: 16px;
+      }
+
+      .jcm-date-pill {
+        min-height: 28px;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+
+      .jcm-photo-card h3 {
+        gap: 8px;
+        font-size: 20px;
+      }
+
+      .jcm-ok-pill {
+        min-width: 34px;
+        height: 24px;
+        font-size: 11px;
+      }
+
+      .jcm-photo-teams {
+        gap: 10px;
+        min-height: 68px;
+        font-size: 22px;
+      }
+
+      .jcm-gallery-logo {
+        width: 74px;
+        height: 64px;
+      }
+
+      .jcm-gallery-logo.small {
+        width: 45px;
+        height: 42px;
+      }
+
+      .jcm-logo-stack {
+        gap: 4px;
+        max-width: 100%;
+      }
+
+      .jcm-card-actions {
+        grid-template-columns: 1fr 88px;
+        gap: 8px;
+      }
+
+      .jcm-card-actions a,
+      .jcm-card-actions button {
+        min-height: 42px;
+        border-radius: 11px;
+        font-size: 14px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .jcm-page {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      .jcm-hero h1 {
+        font-size: 28px;
+      }
+
+      .jcm-photo-card h3 {
+        font-size: 18px;
+      }
+
+      .jcm-gallery-logo {
+        width: 66px;
+        height: 58px;
+      }
+
+      .jcm-gallery-logo.small {
+        width: 39px;
+        height: 37px;
+      }
+
+      .jcm-card-actions {
         grid-template-columns: 1fr;
       }
     }
@@ -506,6 +651,15 @@
       const countEl = root.querySelector("[data-count]");
       const refreshButtons = root.querySelectorAll("[data-refresh]");
       let photoRows = [];
+
+      function sendEmbedHeight() {
+        window.requestAnimationFrame(() => {
+          window.parent?.postMessage({
+            type: "jcm-2026-height",
+            height: Math.ceil(document.documentElement.scrollHeight)
+          }, "*");
+        });
+      }
 
       const TEAM_LOGOS = {
         "multivix vitoria": "https://jcm-cobertura.vercel.app/multivix-vitoria.png",
@@ -694,6 +848,7 @@
 
         if (!rows.length) {
           photosEl.innerHTML = `<div class="jcm-empty">Nenhuma galeria disponível nesse filtro ainda.</div>`;
+          sendEmbedHeight();
           return;
         }
 
@@ -720,6 +875,7 @@
             </article>
           `;
         }).join("");
+        sendEmbedHeight();
       }
 
       async function loadPhotos() {
@@ -738,6 +894,7 @@
           statusEl.textContent = "Erro ao carregar";
         } finally {
           statusEl.classList.remove("jcm-loading");
+          sendEmbedHeight();
         }
       }
 
@@ -755,6 +912,8 @@
 
       searchEl.addEventListener("input", renderPhotos);
       modalityEl.addEventListener("change", renderPhotos);
+      window.addEventListener("load", sendEmbedHeight);
+      window.addEventListener("resize", sendEmbedHeight);
       refreshButtons.forEach((button) => button.addEventListener("click", loadPhotos));
       loadPhotos();
     })();
