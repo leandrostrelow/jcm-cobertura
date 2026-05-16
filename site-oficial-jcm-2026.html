@@ -489,6 +489,8 @@
         venue: ["Local"],
         modality: ["Modalidade"],
         phase: ["Fase"],
+        type: ["Tipo"],
+        notes: ["ObservaÃ§Ãµes", "Observações"],
         teamA: ["Equipe A"],
         teamB: ["Equipe B"],
         scoreA: ["Placar A"],
@@ -541,6 +543,15 @@
         return value || "A definir";
       }
 
+      function teamsLabel(row) {
+        const teamA = get(row, "teamA");
+        const teamB = get(row, "teamB");
+        if (teamA || teamB) return `${cleanTeam(teamA)} x ${cleanTeam(teamB)}`;
+        const notes = get(row, "notes");
+        if (/todas as atl/i.test(notes)) return "Todas as atléticas";
+        return get(row, "type") === "Evento" ? "Evento geral" : "Equipes a definir";
+      }
+
       function scoreLabel(row) {
         const scoreA = get(row, "scoreA");
         const scoreB = get(row, "scoreB");
@@ -558,6 +569,7 @@
       }
 
       function isCoverageFinished(row) {
+        if (isTrue(get(row, "editedPhotosDone"))) return true;
         if (isTrue(get(row, "finalized"))) return true;
         const status = normalizeText(get(row, "status"));
         if (status === "finalizada") return true;
@@ -638,8 +650,6 @@
           const modality = get(row, "modality");
           const phase = get(row, "phase");
           const venue = get(row, "venue");
-          const teamA = cleanTeam(get(row, "teamA"));
-          const teamB = cleanTeam(get(row, "teamB"));
           const dateText = [day, date].filter(Boolean).join(" - ");
 
           return `
@@ -656,7 +666,7 @@
                   <span>${escapeHtml(scoreLabel(row))}</span>
                 </div>
               </div>
-              <p class="jcm-photo-teams">${escapeHtml(teamA)} x ${escapeHtml(teamB)}</p>
+              <p class="jcm-photo-teams">${escapeHtml(teamsLabel(row))}</p>
               <div class="jcm-card-actions">
                 <a href="${escapeHtml(url)}" target="_blank" rel="noopener">Ver fotos</a>
                 <button type="button" data-copy="${escapeHtml(url)}">Copiar</button>
