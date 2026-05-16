@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JCM 2026 - Chaveamento e Fotos</title>
+  <style>
+    :root {
+      --jcm-purple: #7c2cff;
+      --jcm-purple-dark: #220b3d;
+      --jcm-text: #111116;
+      --jcm-muted: #686b78;
+      --jcm-line: #e8e4ef;
+      --jcm-card: #ffffff;
+      --jcm-soft: #f6f1ff;
+      --jcm-shadow: 0 18px 55px rgba(30, 16, 55, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f7f5fa;
+      color: var(--jcm-text);
+      font-family: Inter, Montserrat, Arial, sans-serif;
+    }
+
+    .jcm-page {
+      width: min(1160px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    .jcm-hero {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+      min-height: 240px;
+      padding: 34px;
+      border-radius: 24px;
+      color: #fff;
+      background:
+        linear-gradient(105deg, rgba(12, 7, 22, 0.92), rgba(45, 13, 75, 0.9)),
+        radial-gradient(circle at 75% 20%, rgba(124, 44, 255, 0.55), transparent 34%),
+        #150720;
+      box-shadow: var(--jcm-shadow);
+    }
+
+    .jcm-hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.2;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+      background-size: 22px 22px;
+      pointer-events: none;
+    }
+
+    .jcm-hero-content,
+    .jcm-hero-actions {
+      position: relative;
+      z-index: 1;
+    }
+
+    .jcm-brand-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      align-items: center;
+      margin-bottom: 26px;
+    }
+
+    .jcm-brand-logo {
+      width: auto;
+      max-width: 180px;
+      height: 58px;
+      object-fit: contain;
+    }
+
+    .jcm-brand-logo.jcm-mark {
+      max-width: 82px;
+    }
+
+    .jcm-kicker {
+      margin: 0 0 8px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .jcm-hero h1 {
+      margin: 0;
+      max-width: 720px;
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .jcm-hero p {
+      max-width: 640px;
+      margin: 18px 0 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 18px;
+      line-height: 1.5;
+    }
+
+    .jcm-hero-actions {
+      display: grid;
+      gap: 12px;
+      min-width: 240px;
+    }
+
+    .jcm-button {
+      display: inline-flex;
+      min-height: 52px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 22px;
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 14px;
+      background: #fff;
+      color: var(--jcm-purple-dark);
+      font-size: 16px;
+      font-weight: 900;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .jcm-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .jcm-button.secondary {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+
+    .jcm-toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: end;
+      margin: 24px 0 18px;
+      padding: 18px;
+      border: 1px solid var(--jcm-line);
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 10px 28px rgba(20, 12, 35, 0.06);
+    }
+
+    .jcm-field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .jcm-field label {
+      color: var(--jcm-muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .jcm-field input,
+    .jcm-field select {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--jcm-line);
+      border-radius: 12px;
+      padding: 0 14px;
+      background: #fff;
+      color: var(--jcm-text);
+      font: inherit;
+      font-weight: 750;
+    }
+
+    .jcm-status {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 14px;
+      border-radius: 12px;
+      background: var(--jcm-soft);
+      color: var(--jcm-purple);
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .jcm-section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin: 26px 0 14px;
+    }
+
+    .jcm-section-title h2 {
+      margin: 0;
+      font-size: clamp(26px, 3vw, 38px);
+      line-height: 1;
+    }
+
+    .jcm-section-title span {
+      color: var(--jcm-muted);
+      font-weight: 850;
+    }
+
+    .jcm-photo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .jcm-photo-card {
+      display: grid;
+      gap: 16px;
+      min-height: 250px;
+      padding: 18px;
+      border: 1px solid var(--jcm-line);
+      border-radius: 18px;
+      background: var(--jcm-card);
+      box-shadow: 0 10px 30px rgba(20, 12, 35, 0.06);
+    }
+
+    .jcm-photo-top {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .jcm-date-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: var(--jcm-soft);
+      color: var(--jcm-purple);
+      font-size: 13px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .jcm-photo-card h3 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.05;
+    }
+
+    .jcm-photo-meta {
+      display: grid;
+      gap: 7px;
+      color: var(--jcm-muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .jcm-photo-teams {
+      margin: 0;
+      color: var(--jcm-text);
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 950;
+    }
+
+    .jcm-card-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-self: end;
+    }
+
+    .jcm-card-actions a,
+    .jcm-card-actions button {
+      min-height: 44px;
+      border: 1px solid var(--jcm-line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--jcm-purple-dark);
+      font: inherit;
+      font-weight: 950;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .jcm-card-actions a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--jcm-purple);
+      color: #fff;
+      border-color: var(--jcm-purple);
+    }
+
+    .jcm-empty {
+      display: grid;
+      place-items: center;
+      min-height: 220px;
+      padding: 28px;
+      border: 1px dashed #d8d0e8;
+      border-radius: 18px;
+      background: #fff;
+      color: var(--jcm-muted);
+      text-align: center;
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .jcm-loading {
+      animation: jcmPulse 1.1s ease-in-out infinite alternate;
+    }
+
+    @keyframes jcmPulse {
+      from { opacity: 0.55; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 920px) {
+      .jcm-hero,
+      .jcm-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .jcm-photo-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .jcm-hero-actions {
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .jcm-page {
+        width: min(100% - 20px, 1160px);
+        padding-top: 12px;
+      }
+
+      .jcm-hero {
+        padding: 24px 18px;
+        border-radius: 18px;
+      }
+
+      .jcm-brand-row {
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .jcm-brand-logo {
+        height: 46px;
+        max-width: 142px;
+      }
+
+      .jcm-brand-logo.jcm-mark {
+        max-width: 64px;
+      }
+
+      .jcm-hero p {
+        font-size: 15px;
+      }
+
+      .jcm-toolbar {
+        padding: 14px;
+        border-radius: 16px;
+      }
+
+      .jcm-section-title {
+        display: grid;
+      }
+
+      .jcm-photo-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="jcm2026" class="jcm-page">
+    <section class="jcm-hero" aria-label="Jogos Capixaba de Medicina 2026">
+      <div class="jcm-hero-content">
+        <div class="jcm-brand-row">
+          <img class="jcm-brand-logo" src="https://jcm-cobertura.vercel.app/lotus-logo.png" alt="Lotus Formaturas">
+          <img class="jcm-brand-logo jcm-mark" src="https://jcm-cobertura.vercel.app/jcm-logo.png" alt="JCM">
+        </div>
+        <p class="jcm-kicker">Cobertura oficial</p>
+        <h1>Jogos Capixaba de Medicina 2026</h1>
+        <p>Acompanhe os mata-matas atualizados e acesse as galerias oficiais conforme forem publicadas.</p>
+      </div>
+      <div class="jcm-hero-actions">
+        <a class="jcm-button" href="https://jogos.lotusformaturas.com/chaveamento" target="_blank" rel="noopener">Ver chaveamento</a>
+        <button class="jcm-button secondary" type="button" data-refresh>Atualizar fotos</button>
+      </div>
+    </section>
+
+    <section class="jcm-toolbar" aria-label="Filtros das galerias">
+      <div class="jcm-field">
+        <label for="jcmSearch">Buscar</label>
+        <input id="jcmSearch" type="search" placeholder="Digite modalidade, atlética ou fase">
+      </div>
+      <div class="jcm-field">
+        <label for="jcmModality">Modalidade</label>
+        <select id="jcmModality">
+          <option value="all">Todas as modalidades</option>
+        </select>
+      </div>
+      <div class="jcm-status" data-status>Carregando...</div>
+    </section>
+
+    <section class="jcm-section-title">
+      <div>
+        <span>Galerias publicadas</span>
+        <h2>Fotos disponíveis</h2>
+      </div>
+      <span data-count>0 galerias</span>
+    </section>
+
+    <section id="jcmPhotos" class="jcm-photo-grid" aria-live="polite">
+      <div class="jcm-empty jcm-loading">Buscando fotos publicadas...</div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const API_URL = "https://script.google.com/macros/s/AKfycbzF1MGAmojETsvqyoxybuBjDN3FRh4ivw785S1B9omphFuQ5Uuq8nrxla8SgHDedundxg/exec";
+      const root = document.querySelector("#jcm2026");
+      const photosEl = root.querySelector("#jcmPhotos");
+      const searchEl = root.querySelector("#jcmSearch");
+      const modalityEl = root.querySelector("#jcmModality");
+      const statusEl = root.querySelector("[data-status]");
+      const countEl = root.querySelector("[data-count]");
+      const refreshButtons = root.querySelectorAll("[data-refresh]");
+      let photoRows = [];
+
+      const fieldAliases = {
+        id: ["ID", "Id"],
+        date: ["Data"],
+        day: ["Dia"],
+        time: ["Horário", "HorÃ¡rio"],
+        venue: ["Local"],
+        modality: ["Modalidade"],
+        phase: ["Fase"],
+        teamA: ["Equipe A"],
+        teamB: ["Equipe B"],
+        scoreA: ["Placar A"],
+        scoreB: ["Placar B"],
+        editedPhotosUrl: ["Link fotos editadas", "Link Fotos Editadas", "Fotos editadas", "Link fotos"],
+        status: ["Status"]
+      };
+
+      function get(row, key) {
+        const aliases = fieldAliases[key] || [key];
+        for (const alias of aliases) {
+          if (row[alias] != null && String(row[alias]).trim() !== "") return String(row[alias]).trim();
+        }
+        return "";
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function normalizeText(value) {
+        return String(value || "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
+      }
+
+      function shortDate(value) {
+        const text = String(value || "");
+        const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (iso) return `${iso[3]}/${iso[2]}`;
+        return text.slice(0, 5) || "-";
+      }
+
+      function cleanTeam(value) {
+        return value || "A definir";
+      }
+
+      function scoreLabel(row) {
+        const scoreA = get(row, "scoreA");
+        const scoreB = get(row, "scoreB");
+        return scoreA !== "" && scoreB !== "" ? `Placar: ${scoreA} x ${scoreB}` : "Fotos publicadas";
+      }
+
+      function rowSearchText(row) {
+        return normalizeText([
+          get(row, "date"),
+          get(row, "day"),
+          get(row, "time"),
+          get(row, "venue"),
+          get(row, "modality"),
+          get(row, "phase"),
+          get(row, "teamA"),
+          get(row, "teamB"),
+          get(row, "status")
+        ].join(" "));
+      }
+
+      function sortRows(rows) {
+        return [...rows].sort((a, b) => {
+          const aKey = `${get(a, "date")} ${get(a, "time")} ${get(a, "modality")}`;
+          const bKey = `${get(b, "date")} ${get(b, "time")} ${get(b, "modality")}`;
+          return aKey.localeCompare(bKey, "pt-BR", { numeric: true });
+        });
+      }
+
+      function populateModalities(rows) {
+        const current = modalityEl.value || "all";
+        const modalities = [...new Set(rows.map((row) => get(row, "modality")).filter(Boolean))]
+          .sort((a, b) => a.localeCompare(b, "pt-BR"));
+        modalityEl.innerHTML = [
+          `<option value="all">Todas as modalidades</option>`,
+          ...modalities.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`)
+        ].join("");
+        modalityEl.value = modalities.includes(current) ? current : "all";
+      }
+
+      function filteredRows() {
+        const query = normalizeText(searchEl.value);
+        const modality = modalityEl.value;
+        return photoRows.filter((row) => {
+          const matchSearch = !query || rowSearchText(row).includes(query);
+          const matchModality = modality === "all" || get(row, "modality") === modality;
+          return matchSearch && matchModality;
+        });
+      }
+
+      function renderPhotos() {
+        const rows = filteredRows();
+        countEl.textContent = `${rows.length} ${rows.length === 1 ? "galeria" : "galerias"}`;
+
+        if (!rows.length) {
+          photosEl.innerHTML = `<div class="jcm-empty">Nenhuma galeria disponível nesse filtro ainda.</div>`;
+          return;
+        }
+
+        photosEl.innerHTML = rows.map((row) => {
+          const url = get(row, "editedPhotosUrl");
+          const date = shortDate(get(row, "date"));
+          const day = get(row, "day");
+          const time = get(row, "time");
+          const modality = get(row, "modality");
+          const phase = get(row, "phase");
+          const venue = get(row, "venue");
+          const teamA = cleanTeam(get(row, "teamA"));
+          const teamB = cleanTeam(get(row, "teamB"));
+          const dateText = [day, date].filter(Boolean).join(" - ");
+
+          return `
+            <article class="jcm-photo-card">
+              <div class="jcm-photo-top">
+                <span class="jcm-date-pill">${escapeHtml(dateText || date)}</span>
+                <span class="jcm-date-pill">${escapeHtml(time || "-")}</span>
+              </div>
+              <div>
+                <h3>${escapeHtml(modality || "JCM 2026")}</h3>
+                <div class="jcm-photo-meta">
+                  <span>${escapeHtml(phase || "Partida")}</span>
+                  <span>${escapeHtml(venue || "Local a confirmar")}</span>
+                  <span>${escapeHtml(scoreLabel(row))}</span>
+                </div>
+              </div>
+              <p class="jcm-photo-teams">${escapeHtml(teamA)} x ${escapeHtml(teamB)}</p>
+              <div class="jcm-card-actions">
+                <a href="${escapeHtml(url)}" target="_blank" rel="noopener">Ver fotos</a>
+                <button type="button" data-copy="${escapeHtml(url)}">Copiar</button>
+              </div>
+            </article>
+          `;
+        }).join("");
+      }
+
+      async function loadPhotos() {
+        statusEl.textContent = "Atualizando...";
+        statusEl.classList.add("jcm-loading");
+        try {
+          const response = await fetch(`${API_URL}?action=list&t=${Date.now()}`);
+          const payload = await response.json();
+          if (!payload.ok) throw new Error(payload.error || "Erro ao carregar fotos");
+          photoRows = sortRows((payload.rows || []).filter((row) => get(row, "editedPhotosUrl")));
+          populateModalities(photoRows);
+          renderPhotos();
+          statusEl.textContent = `Atualizado ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+        } catch (error) {
+          photosEl.innerHTML = `<div class="jcm-empty">Não foi possível carregar as fotos agora. Tente atualizar em instantes.</div>`;
+          statusEl.textContent = "Erro ao carregar";
+        } finally {
+          statusEl.classList.remove("jcm-loading");
+        }
+      }
+
+      root.addEventListener("click", async (event) => {
+        const copy = event.target.closest("[data-copy]");
+        if (!copy) return;
+        try {
+          await navigator.clipboard.writeText(copy.dataset.copy);
+          copy.textContent = "Copiado";
+          window.setTimeout(() => { copy.textContent = "Copiar"; }, 1400);
+        } catch {
+          window.prompt("Copie o link das fotos:", copy.dataset.copy);
+        }
+      });
+
+      searchEl.addEventListener("input", renderPhotos);
+      modalityEl.addEventListener("change", renderPhotos);
+      refreshButtons.forEach((button) => button.addEventListener("click", loadPhotos));
+      loadPhotos();
+    })();
+  </script>
+</body>
+</html>
