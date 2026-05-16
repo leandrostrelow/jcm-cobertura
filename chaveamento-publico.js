@@ -335,6 +335,15 @@ function teamGames(option, brackets = BRACKET_DEFINITIONS) {
       const scoreOwn = isTeamA ? data.scoreA : data.scoreB;
       const scoreOpponent = isTeamA ? data.scoreB : data.scoreA;
       const scoreReady = hasCompleteScore(data);
+      const ownNumber = scoreNumber(scoreOwn);
+      const opponentNumber = scoreNumber(scoreOpponent);
+      const outcome = scoreReady && !Number.isNaN(ownNumber) && !Number.isNaN(opponentNumber)
+        ? ownNumber > opponentNumber
+          ? "win"
+          : ownNumber < opponentNumber
+            ? "loss"
+            : "draw"
+        : "";
       return {
         ...item,
         bracketId: bracketForMatch(id)?.id || "",
@@ -343,6 +352,7 @@ function teamGames(option, brackets = BRACKET_DEFINITIONS) {
         scoreOwn,
         scoreOpponent,
         scoreReady,
+        outcome,
         resultStatus: scoreReady ? `${normalizeText(scoreOwn)} x ${normalizeText(scoreOpponent)}` : statusForRecord(data)
       };
     })
@@ -436,7 +446,7 @@ function renderTeamSummaryCard(team) {
 }
 
 function renderTeamGame(game) {
-  const statusClass = game.scoreReady ? "done" : "pending";
+  const statusClass = game.scoreReady ? `done ${game.outcome}`.trim() : "pending";
   const selectedTeam = teamOption(activeTeamFilter);
   return `
     <div class="public-team-game ${statusClass}">

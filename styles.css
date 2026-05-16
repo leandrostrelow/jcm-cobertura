@@ -391,6 +391,44 @@ h1 {
   color: var(--green);
 }
 
+.public-team-game.win {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.public-team-game.win .public-team-game-versus strong {
+  color: #047857;
+}
+
+.public-team-game.win em {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.public-team-game.loss {
+  border-color: #fecdd3;
+  background: #fff1f2;
+}
+
+.public-team-game.loss .public-team-game-versus strong {
+  color: #be123c;
+}
+
+.public-team-game.loss em {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.public-team-game.draw {
+  border-color: #e9d5ff;
+  background: #faf5ff;
+}
+
+.public-team-game.draw em {
+  background: #f3e8ff;
+  color: var(--blue);
+}
+
 .public-team-game.pending em {
   background: var(--soft-amber);
   color: #b45309;
