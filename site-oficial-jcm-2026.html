@@ -260,9 +260,27 @@
     }
 
     .jcm-photo-card h3 {
+      display: flex;
+      gap: 10px;
+      align-items: center;
       margin: 0;
       font-size: 22px;
       line-height: 1.05;
+    }
+
+    .jcm-ok-pill {
+      display: inline-flex;
+      min-width: 40px;
+      height: 28px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: #17c964;
+      color: #04140a;
+      font-size: 13px;
+      font-weight: 950;
+      line-height: 1;
+      flex: 0 0 auto;
     }
 
     .jcm-photo-meta {
@@ -396,10 +414,6 @@
   <main id="jcm2026" class="jcm-page">
     <section class="jcm-hero" aria-label="Jogos Capixaba de Medicina 2026">
       <div class="jcm-hero-content">
-        <div class="jcm-brand-row">
-          <img class="jcm-brand-logo" src="https://jcm-cobertura.vercel.app/lotus-logo.png" alt="Lotus Formaturas">
-          <img class="jcm-brand-logo jcm-mark" src="https://jcm-cobertura.vercel.app/jcm-logo.png" alt="JCM">
-        </div>
         <p class="jcm-kicker">Cobertura oficial</p>
         <h1>Jogos Capixaba de Medicina 2026</h1>
         <p>Acompanhe os mata-matas atualizados e acesse as galerias oficiais conforme forem publicadas.</p>
@@ -462,7 +476,16 @@
         scoreA: ["Placar A"],
         scoreB: ["Placar B"],
         editedPhotosUrl: ["Link fotos editadas", "Link Fotos Editadas", "Fotos editadas", "Link fotos"],
-        status: ["Status"]
+        status: ["Status"],
+        finalized: ["Finalizada"],
+        started: ["InÃ­cio feito", "Início feito"],
+        startArtDone: ["Arte inÃ­cio feita", "Arte início feita"],
+        resultArtDone: ["Arte resultado feita"],
+        originalPhotosSent: ["Originais enviadas"],
+        selectionDone: ["SeleÃ§Ã£o feita", "Seleção feita"],
+        editingDone: ["EdiÃ§Ã£o feita", "Edição feita"],
+        reviewDone: ["ConferÃªncia feita", "Conferência feita"],
+        editedPhotosDone: ["Fotos editadas feitas"]
       };
 
       function get(row, key) {
@@ -509,6 +532,32 @@
       function isReleasedPhotoRow(row) {
         const url = get(row, "editedPhotosUrl");
         return /^https?:\/\//i.test(url) && !url.includes("...");
+      }
+
+      function isTrue(value) {
+        const text = normalizeText(value).trim();
+        return value === true || ["true", "sim", "ok", "1"].includes(text);
+      }
+
+      function isCoverageFinished(row) {
+        if (isTrue(get(row, "finalized"))) return true;
+        const status = normalizeText(get(row, "status"));
+        if (status === "finalizada") return true;
+        const requiredChecks = [
+          "started",
+          "startArtDone",
+          "resultArtDone",
+          "originalPhotosSent",
+          "selectionDone",
+          "editingDone",
+          "reviewDone",
+          "editedPhotosDone"
+        ];
+        return requiredChecks.every((field) => isTrue(get(row, field)));
+      }
+
+      function isPublishedPhotoRow(row) {
+        return isReleasedPhotoRow(row) && isCoverageFinished(row);
       }
 
       function rowSearchText(row) {
@@ -582,7 +631,7 @@
                 <span class="jcm-date-pill">${escapeHtml(time || "-")}</span>
               </div>
               <div>
-                <h3>${escapeHtml(modality || "JCM 2026")}</h3>
+                <h3><span class="jcm-ok-pill">OK</span>${escapeHtml(modality || "JCM 2026")}</h3>
                 <div class="jcm-photo-meta">
                   <span>${escapeHtml(phase || "Partida")}</span>
                   <span>${escapeHtml(venue || "Local a confirmar")}</span>
@@ -606,7 +655,7 @@
           const response = await fetch(`${API_URL}?action=list&t=${Date.now()}`);
           const payload = await response.json();
           if (!payload.ok) throw new Error(payload.error || "Erro ao carregar fotos");
-          photoRows = sortRows((payload.rows || []).filter(isReleasedPhotoRow));
+          photoRows = sortRows((payload.rows || []).filter(isPublishedPhotoRow));
           populateModalities(photoRows);
           renderPhotos();
           statusEl.textContent = `Atualizado ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
