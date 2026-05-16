@@ -139,6 +139,12 @@
       transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
     }
 
+    .jcm-button svg {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+    }
+
     .jcm-button:hover {
       transform: translateY(-1px);
     }
@@ -146,6 +152,12 @@
     .jcm-button.secondary {
       background: rgba(255,255,255,0.08);
       color: #fff;
+    }
+
+    .jcm-button.youtube {
+      background: #ff0033;
+      color: #fff;
+      border-color: #ff0033;
     }
 
     .jcm-toolbar {
@@ -420,6 +432,12 @@
       </div>
       <div class="jcm-hero-actions">
         <a class="jcm-button" href="https://jogos.lotusformaturas.com/chaveamento" target="_blank" rel="noopener">Ver chaveamento</a>
+        <a class="jcm-button youtube" href="https://www.youtube.com/@lotusformaturas" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4L15.9 12l-6.3 3.6Z"/>
+          </svg>
+          Assistir ao vivo
+        </a>
         <button class="jcm-button secondary" type="button" data-refresh>Atualizar fotos</button>
       </div>
     </section>
