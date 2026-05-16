@@ -241,8 +241,8 @@
 
     .jcm-photo-card {
       display: grid;
-      gap: 16px;
-      min-height: 250px;
+      gap: 14px;
+      min-height: 220px;
       padding: 18px;
       border: 1px solid var(--jcm-line);
       border-radius: 18px;
@@ -276,7 +276,7 @@
       gap: 10px;
       align-items: center;
       margin: 0;
-      font-size: 22px;
+      font-size: 24px;
       line-height: 1.05;
     }
 
@@ -297,18 +297,44 @@
 
     .jcm-photo-meta {
       display: grid;
-      gap: 7px;
+      gap: 5px;
       color: var(--jcm-muted);
       font-size: 14px;
       font-weight: 800;
     }
 
     .jcm-photo-teams {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      min-height: 88px;
       margin: 0;
       color: var(--jcm-text);
-      font-size: 18px;
+      font-size: 28px;
       line-height: 1.25;
       font-weight: 950;
+    }
+
+    .jcm-gallery-logo {
+      width: 94px;
+      height: 82px;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.14));
+    }
+
+    .jcm-gallery-logo.small {
+      width: 68px;
+      height: 62px;
+    }
+
+    .jcm-logo-stack {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      max-width: 260px;
     }
 
     .jcm-card-actions {
@@ -481,6 +507,16 @@
       const refreshButtons = root.querySelectorAll("[data-refresh]");
       let photoRows = [];
 
+      const TEAM_LOGOS = {
+        "multivix vitoria": "https://jcm-cobertura.vercel.app/multivix-vitoria.png",
+        "multivix vitória": "https://jcm-cobertura.vercel.app/multivix-vitoria.png",
+        "multivix cachoeiro": "https://jcm-cobertura.vercel.app/multivix-cachoeiro.png",
+        "ufes": "https://jcm-cobertura.vercel.app/ufes.png",
+        "emescam": "https://jcm-cobertura.vercel.app/emescam.png",
+        "uvv": "https://jcm-cobertura.vercel.app/uvv.png",
+        "unesc": "https://jcm-cobertura.vercel.app/unesc.png"
+      };
+
       const fieldAliases = {
         id: ["ID", "Id"],
         date: ["Data"],
@@ -543,13 +579,32 @@
         return value || "A definir";
       }
 
-      function teamsLabel(row) {
+      function teamLogo(team) {
+        return TEAM_LOGOS[normalizeText(team)];
+      }
+
+      function logoImg(team, className = "") {
+        const logo = teamLogo(team);
+        if (!logo) return "";
+        return `<img class="jcm-gallery-logo ${className}" src="${escapeHtml(logo)}" alt="${escapeHtml(team)}">`;
+      }
+
+      function teamsVisual(row) {
         const teamA = get(row, "teamA");
         const teamB = get(row, "teamB");
-        if (teamA || teamB) return `${cleanTeam(teamA)} x ${cleanTeam(teamB)}`;
+        const logoA = logoImg(teamA);
+        const logoB = logoImg(teamB);
+        if (logoA || logoB) {
+          return `${logoA || `<strong>${escapeHtml(cleanTeam(teamA))}</strong>`}<span>x</span>${logoB || `<strong>${escapeHtml(cleanTeam(teamB))}</strong>`}`;
+        }
         const notes = get(row, "notes");
-        if (/todas as atl/i.test(notes)) return "Todas as atléticas";
-        return get(row, "type") === "Evento" ? "Evento geral" : "Equipes a definir";
+        if (/todas as atl/i.test(notes)) {
+          const allLogos = ["Multivix Vitória", "Multivix Cachoeiro", "UFES", "EMESCAM", "UVV", "UNESC"]
+            .map((team) => logoImg(team, "small"))
+            .join("");
+          return `<span class="jcm-logo-stack">${allLogos}</span>`;
+        }
+        return `<strong>${escapeHtml(get(row, "type") === "Evento" ? "Evento geral" : "Equipes a definir")}</strong>`;
       }
 
       function scoreLabel(row) {
@@ -661,12 +716,10 @@
               <div>
                 <h3><span class="jcm-ok-pill">OK</span>${escapeHtml(modality || "JCM 2026")}</h3>
                 <div class="jcm-photo-meta">
-                  <span>${escapeHtml(phase || "Partida")}</span>
                   <span>${escapeHtml(venue || "Local a confirmar")}</span>
-                  <span>${escapeHtml(scoreLabel(row))}</span>
                 </div>
               </div>
-              <p class="jcm-photo-teams">${escapeHtml(teamsLabel(row))}</p>
+              <div class="jcm-photo-teams">${teamsVisual(row)}</div>
               <div class="jcm-card-actions">
                 <a href="${escapeHtml(url)}" target="_blank" rel="noopener">Ver fotos</a>
                 <button type="button" data-copy="${escapeHtml(url)}">Copiar</button>
