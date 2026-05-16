@@ -435,6 +435,7 @@ function extraPhotographersFromRow(row) {
 function recordToSheetData(id) {
   const item = getItemById(id) || {};
   const data = record(id);
+  normalizeCoverageTiming(data, item);
   const finalized = isRecordFinalized(data);
   const extras = data.photographers.slice(2);
   const extraNames = extras.map((person) => person.name).filter(Boolean).join(" | ");
@@ -688,10 +689,57 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function parseStoredDateTime(value, item = {}) {
+  const text = normalizeText(value).trim();
+  if (!text) return NaN;
+
+  const direct = new Date(text).getTime();
+  if (!Number.isNaN(direct)) return direct;
+
+  const brDateTime = text.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?:,)?\s+(\d{1,2}):(\d{2})/);
+  if (brDateTime) {
+    const year = brDateTime[3]
+      ? Number(brDateTime[3].length === 2 ? `20${brDateTime[3]}` : brDateTime[3])
+      : new Date().getFullYear();
+    return new Date(
+      year,
+      Number(brDateTime[2]) - 1,
+      Number(brDateTime[1]),
+      Number(brDateTime[4]),
+      Number(brDateTime[5])
+    ).getTime();
+  }
+
+  const timeOnly = text.match(/^(\d{1,2}):(\d{2})$/);
+  const dateText = normalizeText(item.date).trim();
+  const brDate = dateText.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if (timeOnly && brDate) {
+    const year = brDate[3]
+      ? Number(brDate[3].length === 2 ? `20${brDate[3]}` : brDate[3])
+      : new Date().getFullYear();
+    return new Date(
+      year,
+      Number(brDate[2]) - 1,
+      Number(brDate[1]),
+      Number(timeOnly[1]),
+      Number(timeOnly[2])
+    ).getTime();
+  }
+
+  return NaN;
+}
+
+function coverageStartFallbackIso(item = {}) {
+  const scheduled = parseStoredDateTime(item.time, item);
+  if (!Number.isNaN(scheduled) && scheduled <= Date.now()) return new Date(scheduled).toISOString();
+  return nowIso();
+}
+
 function formatTimestamp(value) {
   if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  const timestamp = parseStoredDateTime(value);
+  if (Number.isNaN(timestamp)) return value;
+  const date = new Date(timestamp);
   return date.toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -702,18 +750,19 @@ function formatTimestamp(value) {
 
 function formatTimeOnly(value) {
   if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  const timestamp = parseStoredDateTime(value);
+  if (Number.isNaN(timestamp)) return value;
+  const date = new Date(timestamp);
   return date.toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit"
   });
 }
 
-function formatDuration(startIso, endIso) {
+function formatDuration(startIso, endIso, item = {}) {
   if (!startIso || !endIso) return "";
-  const start = new Date(startIso).getTime();
-  const end = new Date(endIso).getTime();
+  const start = parseStoredDateTime(startIso, item);
+  const end = parseStoredDateTime(endIso, item);
   if (Number.isNaN(start) || Number.isNaN(end) || end < start) return "";
   const totalMinutes = Math.round((end - start) / 60000);
   const hours = Math.floor(totalMinutes / 60);
@@ -721,6 +770,28 @@ function formatDuration(startIso, endIso) {
   if (hours && minutes) return `${hours}h ${minutes}min`;
   if (hours) return `${hours}h`;
   return `${minutes}min`;
+}
+
+function normalizeCoverageTiming(data, item = {}) {
+  if (!hasCompleteScore(data) || !data.startedAt || !data.endedAt) return false;
+  const start = parseStoredDateTime(data.startedAt, item);
+  const end = parseStoredDateTime(data.endedAt, item);
+  const scheduled = parseStoredDateTime(item.time, item);
+  const sameMinute = !Number.isNaN(start) && !Number.isNaN(end) && Math.abs(end - start) < 60000;
+  let changed = false;
+
+  if (sameMinute && data.coverageDuration === "0min" && !Number.isNaN(scheduled) && scheduled < end - 60000) {
+    data.startedAt = new Date(scheduled).toISOString();
+    changed = true;
+  }
+
+  const duration = formatDuration(data.startedAt, data.endedAt, item);
+  if (duration && data.coverageDuration !== duration) {
+    data.coverageDuration = duration;
+    changed = true;
+  }
+
+  return changed;
 }
 
 function setSyncStatus(text, className) {
@@ -757,6 +828,10 @@ function render() {
     return;
   }
   const data = record(item.id);
+  if (normalizeCoverageTiming(data, item)) {
+    saveState();
+    queueSave(item.id, true);
+  }
   const status = statusForRecord(data);
   const statusClass = statusClassForStatus(status);
   const coverageEnded = status === "Fim de jogo" || status === "Finalizada";
@@ -998,7 +1073,7 @@ function updateField(field, value) {
   const data = record(item.id);
   data[field] = value;
   if (field === "scoreA" || field === "scoreB") {
-    syncScoreCompletion(data);
+    syncScoreCompletion(data, item);
   }
   saveState();
   queueSave(item.id);
@@ -1009,7 +1084,7 @@ function updateBracketScore(id, field, value) {
   if (!item || !["scoreA", "scoreB"].includes(field)) return;
   const data = record(id);
   data[field] = value;
-  syncScoreCompletion(data);
+  syncScoreCompletion(data, item);
   saveState();
   queueSave(id, true);
   renderBrackets();
@@ -1029,6 +1104,11 @@ function syncStartState(data) {
   if (data.started && !data.startedAt) {
     data.startedAt = nowIso();
   }
+  if (data.started && !hasCompleteScore(data)) {
+    data.resultDone = false;
+    data.endedAt = "";
+    data.coverageDuration = "";
+  }
   if (!data.started) {
     data.startedAt = "";
     data.endedAt = "";
@@ -1037,11 +1117,13 @@ function syncStartState(data) {
   }
 }
 
-function syncScoreCompletion(data) {
+function syncScoreCompletion(data, item = {}) {
   if (hasCompleteScore(data)) {
+    if (!data.started) data.started = true;
+    if (!data.startedAt) data.startedAt = coverageStartFallbackIso(item);
     data.resultDone = true;
-    if (!data.endedAt) data.endedAt = nowIso();
-    data.coverageDuration = formatDuration(data.startedAt, data.endedAt);
+    if (!data.endedAt || data.coverageDuration === "0min") data.endedAt = nowIso();
+    data.coverageDuration = formatDuration(data.startedAt, data.endedAt, item);
   } else {
     data.resultDone = false;
     data.endedAt = "";
@@ -2867,7 +2949,7 @@ function bindEvents() {
       const field = event.target.dataset.field;
       data[field] = event.target.value;
       if (field === "scoreA" || field === "scoreB") {
-        syncScoreCompletion(data);
+        syncScoreCompletion(data, item);
       }
       saveState();
       queueSave(item.id, true);
@@ -2908,7 +2990,6 @@ function bindEvents() {
       data[field] = !data[field];
       if (field === "started") {
         syncStartState(data);
-        if (data.started) syncScoreCompletion(data);
       }
       saveState();
       queueSave(item.id, true);
