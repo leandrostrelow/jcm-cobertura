@@ -255,7 +255,7 @@
       display: flex;
       gap: 10px;
       align-items: flex-start;
-      justify-content: space-between;
+      justify-content: flex-start;
     }
 
     .jcm-date-pill {
@@ -701,23 +701,16 @@
           const url = get(row, "editedPhotosUrl");
           const date = shortDate(get(row, "date"));
           const day = get(row, "day");
-          const time = get(row, "time");
           const modality = get(row, "modality");
-          const phase = get(row, "phase");
-          const venue = get(row, "venue");
           const dateText = [day, date].filter(Boolean).join(" - ");
 
           return `
             <article class="jcm-photo-card">
               <div class="jcm-photo-top">
                 <span class="jcm-date-pill">${escapeHtml(dateText || date)}</span>
-                <span class="jcm-date-pill">${escapeHtml(time || "-")}</span>
               </div>
               <div>
                 <h3><span class="jcm-ok-pill">OK</span>${escapeHtml(modality || "JCM 2026")}</h3>
-                <div class="jcm-photo-meta">
-                  <span>${escapeHtml(venue || "Local a confirmar")}</span>
-                </div>
               </div>
               <div class="jcm-photo-teams">${teamsVisual(row)}</div>
               <div class="jcm-card-actions">
